@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_drops"
+        android:icon="@drawable/ic_drop_black_24dp"
+        android:title="Drops" />
+    <item
+        android:id="@+id/nav_settings"
+        android:icon="@drawable/ic_settings_black_24dp"
+        android:title="Settings" />
+    <item
+        android:id="@+id/nav_graph"
+        android:icon="@drawable/ic_graph_black_24dp"
+        android:title="Graph" />
+    <item
+        android:id="@+id/nav_drain"
+        android:icon="@drawable/ic_drain_black_24dp"
+        android:title="Drain" />
+    <item
+        android:id="@+id/nav_about"
+        android:icon="@drawable/ic_info_black_24dp"
+        android:title="About" />
+</menu>

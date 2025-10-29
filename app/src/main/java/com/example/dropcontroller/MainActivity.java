@@ -1,41 +1,81 @@
 package com.example.dropcontroller;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
 import android.os.Bundle;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
-import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 
-public class MainActivity extends AppCompatActivity {
+import com.example.dropcontroller.fragments.AboutFragment;
+import com.example.dropcontroller.fragments.DrainFragment;
+import com.example.dropcontroller.fragments.DropsFragment;
+import com.example.dropcontroller.fragments.GraphFragment;
+import com.example.dropcontroller.fragments.SettingsFragment;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 
-    // 1. Объявляем переменные для элементов UI
+// Мы добавили BottomNavigationView.OnNavigationItemSelectedListener
+public class MainActivity extends AppCompatActivity implements BottomNavigationView.OnNavigationItemSelectedListener {
+
     private Button splashButton;
-    private LinearLayout mainContentContainer;
+    private RelativeLayout mainContentContainer;
+    private BottomNavigationView bottomNavigationView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // Устанавливаем XML-разметку как основной вид
         setContentView(R.layout.activity_main);
 
-        // 2. Инициализация: "Привязка" Java-переменных к UI-элементам по ID
+        // 1. Инициализация элементов
         splashButton = findViewById(R.id.btn_splash_screen);
         mainContentContainer = findViewById(R.id.main_content_container);
+        bottomNavigationView = findViewById(R.id.bottom_navigation);
 
-        // 3. Установка слушателя событий (Click Listener)
-        splashButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // Логика App Inventor:
-                // 1. Скрыть кнопку-заставку
-                splashButton.setVisibility(View.GONE);
+        // 2. Установка слушателя нажатий для кнопки заставки (Урок 1)
+        splashButton.setOnClickListener(v -> {
+            splashButton.setVisibility(View.GONE);
+            mainContentContainer.setVisibility(View.VISIBLE);
 
-                // 2. Показать основной контейнер (TABS_VA)
-                mainContentContainer.setVisibility(View.VISIBLE);
+            // Инициализация навигации после скрытия заставки
+            bottomNavigationView.setOnNavigationItemSelectedListener(this);
 
-                // 3. Здесь в будущем будет логика инициализации (Bluetooth, загрузка настроек)
-                // Но пока мы просто переключаем экраны.
-            }
+            // Загрузка первого Фрагмента (DropsFragment) при старте
+            loadFragment(new DropsFragment());
         });
+    }
+
+    // Метод для загрузки Фрагмента
+    private boolean loadFragment(Fragment fragment) {
+        if (fragment != null) {
+            getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.fragment_container, fragment) // Замена текущего Фрагмента в контейнере
+                    .commit(); // Выполнение операции
+            return true;
+        }
+        return false;
+    }
+
+    // 4. Обработчик нажатий на пункты меню
+    @Override
+    public boolean onNavigationItemSelected(MenuItem item) {
+        Fragment fragment = null;
+
+        // R.id.nav_drops, R.id.nav_settings и т.д. - это ID из bottom_nav_menu.xml
+        int itemId = item.getItemId();
+        if (itemId == R.id.nav_drops) {
+            fragment = new DropsFragment();
+        } else if (itemId == R.id.nav_settings) {
+            fragment = new SettingsFragment();
+        } else if (itemId == R.id.nav_graph) {
+            fragment = new GraphFragment();
+        } else if (itemId == R.id.nav_drain) {
+            fragment = new DrainFragment();
+        } else if (itemId == R.id.nav_about) {
+            fragment = new AboutFragment();
+        }
+
+        return loadFragment(fragment);
     }
 }
