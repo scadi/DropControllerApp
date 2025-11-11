@@ -21,6 +21,7 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
     private Button splashButton;
     private RelativeLayout mainContentContainer;
     private BottomNavigationView bottomNavigationView;
+    private final int REQUEST_BLUETOOTH_PERMISSIONS = 100; // Constant request code
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
