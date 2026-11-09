@@ -1,5 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">DropControllerApp</string>
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
+
+    <string name="settings_title">Settings</string>
+    <string name="splash_start">Start Drop Controller</string>
+
+    <!-- Bottom navigation -->
+    <string name="nav_drops">Drops</string>
+    <string name="nav_settings">Settings</string>
+    <string name="nav_graph">Graph</string>
+    <string name="nav_drain">Drain</string>
+    <string name="nav_about">About</string>
+
+    <!-- Drops tab -->
+    <string name="btn_start">START</string>
+    <string name="btn_start_active">ACTIVE</string>
+    <string name="drop_title">DROP %1$d</string>
+    <string name="drop_sol">SOL</string>
+    <string name="drop_start">START (ms)</string>
+    <string name="drop_size">SIZE (ms)</string>
+    <string name="trigger_camera">CT (ms)</string>
+    <string name="trigger_flash">FT%1$d (ms)</string>
+    <string name="trigger_bulb">Bulb</string>
+    <string name="delta_inc">INC</string>
+    <string name="delta_dec">DEC</string>
+    <string name="hint_ms">ms</string>
+    <string name="hint_delta">delta</string>
+    <string name="sequence_timeout">The device did not report the end of the sequence.</string>
+
+    <!-- Drain tab -->
+    <string name="drain_title">Drain</string>
+    <string name="drain_hint">Open a valve to drain it. All valves are closed when you leave this tab.</string>
+    <string name="drain_valve">Valve %1$d</string>
+    <string name="drain_close_all">CLOSE ALL</string>
+
+    <!-- About tab -->
+    <string name="about_title">About</string>
+    <string name="about_app_version">App version: %1$s</string>
+    <string name="about_firmware_unknown">Device firmware: not connected</string>
+    <string name="about_firmware_waiting">Device firmware: waiting for the device</string>
+    <string name="about_firmware">Device firmware: %1$s (%2$s)</string>
+    <string name="about_firmware_no_date">Device firmware: %1$s</string>
+
+    <!-- Graph tab -->
+    <string name="graph_title">Graph</string>
+    <string name="graph_axis_unit">ms</string>
+    <string name="graph_label_drop">D%1$d</string>
+    <string name="graph_label_flash">FT%1$d</string>
+    <string name="graph_label_camera">CT</string>
+    <string name="graph_empty">Nothing to show.</string>
+
+    <!-- Loop Page -->
+    <string name="loop_title">Loop Mode</string>
+    <string name="loop_sequence">SEQUENCE %1$d</string>
+    <string name="loop_drop_header">DROP %1$d   SOL %2$d   STOP %3$d</string>
+    <string name="loop_drop_values">START %1$d %2$s   SIZE %3$d %4$s</string>
+    <string name="loop_camera_off">CT: OFF</string>
+    <string name="loop_camera_bulb">CT: Bulb</string>
+    <string name="loop_camera_on">CT: %1$d %2$s</string>
+    <string name="loop_flash_off">FT%1$d: OFF</string>
+    <string name="loop_flash_on">FT%1$d: %2$d %3$s</string>
+    <string name="loop_status_idle">Stopped. Press START to continue.</string>
+    <string name="loop_status_active">Sequence %1$d is running.</string>
+    <string name="loop_status_countdown">Next sequence in %1$d s.</string>
+    <string name="loop_status_button">Press START for the next sequence.</string>
+    <string name="btn_stop">STOP</string>
+
+    <!-- Settings tab -->
+    <string name="settings_connection">Connection</string>
+    <string name="btn_not_connected">NOT-CONNECTED</string>
+    <string name="btn_connecting">CONNECTING</string>
+    <string name="btn_connected">CONNECTED</string>
+
+    <string name="settings_drops">Drops</string>
+    <string name="settings_num_drops">Number of drops</string>
+
+    <string name="settings_loop">Loop Mode</string>
+    <string name="settings_loop_mode">Loop Mode</string>
+    <string name="settings_delay_method">Delay method</string>
+    <string name="settings_delay_timer">TIMER</string>
+    <string name="settings_delay_button">BUTTON</string>
+    <string name="settings_wait_seconds">Wait time (s)</string>
+
+    <string name="settings_triggers">Triggers</string>
+    <string name="settings_camera_pulse">Camera trigger time (ms)</string>
+    <string name="settings_flash_pulse">Flash trigger time (ms)</string>
+    <string name="settings_camera_enabled">Camera trigger</string>
+    <string name="settings_flash1_enabled">Flash trigger 1</string>
+    <string name="settings_flash2_enabled">Flash trigger 2</string>
+    <string name="settings_flash3_enabled">Flash trigger 3</string>
+
+    <string name="settings_sounds">Sounds</string>
+    <string name="btn_reset">RESET</string>
+
+    <string name="bt_select_device">Select Bluetooth Device</string>
+    <string name="bt_cancel">Cancel</string>
+    <string name="bt_unknown_device">Unknown Device</string>
+    <string name="bt_no_paired_devices">No paired devices found. Pair the dropController in the Android Bluetooth settings.</string>
+    <string name="bt_not_enabled">Bluetooth is not enabled.</string>
+    <string name="bt_permission_missing">Bluetooth permission is not granted.</string>
+    <string name="bt_connection_failed">Connection failed.</string>
+    <string name="bt_connection_lost">Connection lost.</string>
+    <string name="bt_send_error">Error sending data.</string>
+    <string name="bt_not_connected">Not connected to a device.</string>
+
+    <string name="permissions_granted">Bluetooth permissions granted.</string>
+    <string name="permissions_denied">Bluetooth functionality is limited without permissions.</string>
 </resources>

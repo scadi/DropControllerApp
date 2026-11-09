@@ -1,161 +1,310 @@
 package com.example.dropcontroller.fragments;
 
-import android.annotation.SuppressLint;
+import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.os.Bundle;
-
-import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-
-import com.example.dropcontroller.DropConfigAdapter;
-import com.example.dropcontroller.R;
-import com.example.dropcontroller.data.DropData;
-import com.example.dropcontroller.services.BluetoothHelper;
-
-import android.app.AlertDialog;
-import android.bluetooth.BluetoothDevice;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
+
+import com.example.dropcontroller.DropControllerApp;
+import com.example.dropcontroller.LoopActivity;
+import com.example.dropcontroller.R;
+import com.example.dropcontroller.data.AppSettings;
+import com.example.dropcontroller.data.CameraTrigger;
+import com.example.dropcontroller.data.DropData;
+import com.example.dropcontroller.data.FlashTrigger;
+import com.example.dropcontroller.data.Limits;
+import com.example.dropcontroller.data.SequenceData;
+import com.example.dropcontroller.services.BluetoothHelper;
+import com.example.dropcontroller.services.SequenceRunner;
+import com.example.dropcontroller.views.ValueDeltaRow;
+import com.google.android.material.materialswitch.MaterialSwitch;
+
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 /**
- * A simple {@link Fragment} subclass.
- * Use the {@link DropsFragment#newInstance} factory method to
- * create an instance of this fragment.
+ * Drops tab: data of the active drops, camera and flash triggers, and the START button.
+ * <p>
+ * Single Sequence Mode (Loop Mode OFF): START sends the drop data immediately and deltas are ignored.
+ * Loop Mode: START opens the Loop Page ({@link LoopActivity}).
+ * The button is grey when not connected, green when connected and shows ACTIVE while the device runs the sequence.
  */
-public class DropsFragment extends Fragment implements DropConfigAdapter.OnDropConfigListener {
+public class DropsFragment extends Fragment {
 
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private RecyclerView recyclerView;
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
-    private BluetoothHelper bluetoothHelper; // New
-    private Button connectButton;           // New
-    private TextView statusTextView;        // New
+    private DropControllerApp app;
+    private BluetoothHelper bluetoothHelper;
+    private SequenceRunner sequenceRunner;
 
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
+    private final List<View> dropViews = new ArrayList<>();
+    private final List<DropRow> dropRows = new ArrayList<>();
+    private ValueDeltaRow cameraRow;
+    private final ValueDeltaRow[] flashRows = new ValueDeltaRow[SequenceData.FLASH_COUNT];
+    private MaterialSwitch bulbSwitch;
+    private Button startButton;
+
+    // True while the views are filled from the model, so the change listeners do not write back
+    private boolean binding;
+
+    private static final class DropRow {
+        final Spinner solenoid;
+        final ValueDeltaRow start;
+        final ValueDeltaRow size;
+
+        DropRow(Spinner solenoid, ValueDeltaRow start, ValueDeltaRow size) {
+            this.solenoid = solenoid;
+            this.start = start;
+            this.size = size;
+        }
+    }
+
+    private final BluetoothHelper.Listener bluetoothListener = new BluetoothHelper.Listener() {
+        @Override
+        public void onStateChanged(@NonNull BluetoothHelper.State state) {
+            updateStartButton();
+        }
+
+        @Override
+        public void onError(int messageResId) {
+            if (isAdded()) {
+                Toast.makeText(requireContext(), messageResId, Toast.LENGTH_LONG).show();
+            }
+        }
+    };
+
+    private final SequenceRunner.Listener sequenceListener = new SequenceRunner.Listener() {
+        @Override
+        public void onActiveChanged(boolean active) {
+            updateStartButton();
+        }
+
+        @Override
+        public void onFinished(boolean timedOut) {
+            if (timedOut && isAdded()) {
+                Toast.makeText(requireContext(), R.string.sequence_timeout, Toast.LENGTH_LONG).show();
+            }
+        }
+    };
 
     public DropsFragment() {
         // Required empty public constructor
     }
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment DropsFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static DropsFragment newInstance(String param1, String param2) {
-        DropsFragment fragment = new DropsFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
-    }
-
     @Override
-
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_drops, container, false);
 
-        // 1. Initialize Bluetooth Helper
-        bluetoothHelper = new BluetoothHelper(getContext());
+        app = (DropControllerApp) requireActivity().getApplication();
+        bluetoothHelper = app.getBluetoothHelper();
+        sequenceRunner = app.getSequenceRunner();
+        SequenceData sequence = app.getSequence();
 
-        // 2. Initialize UI elements
-        connectButton = view.findViewById(R.id.btn_connect_bluetooth);
-        statusTextView = view.findViewById(R.id.tv_connection_status);
+        LinearLayout dropList = view.findViewById(R.id.ll_drops);
+        for (int i = 0; i < Limits.MAX_DROPS; i++) {
+            View item = inflater.inflate(R.layout.item_drop, dropList, false);
+            dropList.addView(item);
+            dropViews.add(item);
+            dropRows.add(createDropRow(item, i, sequence.getDrop(i)));
+        }
 
-        // 3. Setup Connection Logic
-        setupConnectionButton();
+        createTriggerRows(view, sequence);
 
-        // 4. Initialize RecyclerView (as before)
-        recyclerView = view.findViewById(R.id.rv_drop_configs);
-        // ... (rest of RecyclerView setup) ...
+        startButton = view.findViewById(R.id.btn_start);
+        startButton.setOnClickListener(v -> onStartClick());
 
+        bindViews();
         return view;
     }
-    // ----------------------------------------------------
-    // Update the onSendConfigClick method (Data Transfer)
-    // ----------------------------------------------------
 
     @Override
-    public void onSendConfigClick(DropData dropData) {
-        // App Inventor logic: Create the message string
-        // Example format: "D1,100,50" (Drop ID, Frequency, Size)
-        String message = String.format("D%d,F%s,S%d\n",
-                dropData.getDropNumber(),
-                dropData.getSolenoidFrequency(),
-                dropData.getSliderPosition());
-
-        // Send the data via Bluetooth
-        bluetoothHelper.write(message);
-
-        Toast.makeText(getContext(), "Sent: " + message.trim(), Toast.LENGTH_SHORT).show();
+    public void onStart() {
+        super.onStart();
+        bluetoothHelper.addListener(bluetoothListener);
+        sequenceRunner.addListener(sequenceListener);
+        // Settings may have changed on the Settings tab
+        bindViews();
     }
 
-    // Remember to call disconnect() when the Fragment is destroyed!
     @Override
-    public void onDestroy() {
-        super.onDestroy();
-        if (bluetoothHelper != null) {
-            bluetoothHelper.disconnect();
+    public void onStop() {
+        super.onStop();
+        bluetoothHelper.removeListener(bluetoothListener);
+        sequenceRunner.removeListener(sequenceListener);
+        // A field that still has focus has not been committed yet
+        commitAll();
+    }
+
+    // ----------------------------------------------------
+    // Building the rows
+    // ----------------------------------------------------
+
+    @NonNull
+    private DropRow createDropRow(@NonNull View item, int index, @NonNull DropData drop) {
+        ((TextView) item.findViewById(R.id.tv_drop_title)).setText(getString(R.string.drop_title, index + 1));
+
+        Spinner solenoid = item.findViewById(R.id.sp_solenoid);
+        solenoid.setSaveEnabled(false);
+        List<String> values = new ArrayList<>();
+        for (int sol = Limits.MIN_SOLENOID; sol <= Limits.MAX_SOLENOID; sol++) {
+            values.add(String.valueOf(sol));
+        }
+        ArrayAdapter<String> adapter =
+                new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, values);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        solenoid.setAdapter(adapter);
+        solenoid.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View selected, int position, long id) {
+                if (!binding) {
+                    drop.setSolenoid(position + Limits.MIN_SOLENOID);
+                    app.saveSequence();
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                // Nothing to do
+            }
+        });
+
+        ValueDeltaRow start = new ValueDeltaRow(item.findViewById(R.id.row_start), drop.getStartDelta(),
+                drop::getStartTime, drop::setStartTime, app::saveSequence);
+        start.setLabel(R.string.drop_start);
+        ValueDeltaRow size = new ValueDeltaRow(item.findViewById(R.id.row_size), drop.getSizeDelta(),
+                drop::getSize, drop::setSize, app::saveSequence);
+        size.setLabel(R.string.drop_size);
+        return new DropRow(solenoid, start, size);
+    }
+
+    private void createTriggerRows(@NonNull View view, @NonNull SequenceData sequence) {
+        CameraTrigger camera = sequence.getCamera();
+        cameraRow = new ValueDeltaRow(view.findViewById(R.id.row_camera), camera.getDelta(),
+                camera::getTime, camera::setTime, app::saveSequence);
+        cameraRow.setLabel(R.string.trigger_camera);
+
+        bulbSwitch = view.findViewById(R.id.sw_bulb);
+        bulbSwitch.setOnCheckedChangeListener((button, checked) -> {
+            if (!binding) {
+                camera.setBulb(checked);
+                app.saveSequence();
+                updateTriggerStates();
+            }
+        });
+
+        int[] flashRowIds = {R.id.row_flash1, R.id.row_flash2, R.id.row_flash3};
+        for (int i = 0; i < SequenceData.FLASH_COUNT; i++) {
+            FlashTrigger flash = sequence.getFlash(i);
+            flashRows[i] = new ValueDeltaRow(view.findViewById(flashRowIds[i]), flash.getDelta(),
+                    flash::getTime, flash::setTime, app::saveSequence);
+            flashRows[i].setLabel(R.string.trigger_flash, i + 1);
         }
     }
 
-    // New method to handle the connect button logic
-    private void setupConnectionButton() {
-        connectButton.setOnClickListener(v -> {
-            Set<BluetoothDevice> pairedDevices = bluetoothHelper.getPairedDevices();
+    // ----------------------------------------------------
+    // Model <-> views
+    // ----------------------------------------------------
 
-            if (pairedDevices == null || pairedDevices.isEmpty()) {
-                Toast.makeText(getContext(), "No paired devices found. Pair them in Android Settings.", Toast.LENGTH_LONG).show();
-                return;
-            }
+    private void bindViews() {
+        AppSettings settings = app.getSettings();
+        SequenceData sequence = app.getSequence();
 
-            // Analogous to ListPicker.Elements and ListPicker.Show()
-            final List<String> deviceNames = new ArrayList<>();
-            final List<BluetoothDevice> deviceList = new ArrayList<>(pairedDevices);
+        binding = true;
+        for (int i = 0; i < Limits.MAX_DROPS; i++) {
+            // Only the selected number of drops is active
+            dropViews.get(i).setVisibility(i < settings.getNumDrops() ? View.VISIBLE : View.GONE);
+            DropRow row = dropRows.get(i);
+            row.solenoid.setSelection(sequence.getDrop(i).getSolenoid() - Limits.MIN_SOLENOID);
+            row.start.bind();
+            row.size.bind();
+        }
+        cameraRow.bind();
+        bulbSwitch.setChecked(sequence.getCamera().isBulb());
+        for (ValueDeltaRow row : flashRows) {
+            row.bind();
+        }
+        binding = false;
 
-            for (BluetoothDevice device : deviceList) {
-                // We use the @SuppressLint because we checked for permissions in MainActivity
-                @SuppressLint("MissingPermission")
-                String name = device.getName() != null ? device.getName() : "Unknown Device";
-                deviceNames.add(name + "\n" + device.getAddress());
-            }
+        updateTriggerStates();
+        updateStartButton();
+    }
 
-            // Create a dialog similar to ListPicker
-            AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-            builder.setTitle("Select Bluetooth Device");
+    /**
+     * Disables the controls of a trigger that is OFF. In Bulb mode the camera time and delta are not used.
+     */
+    private void updateTriggerStates() {
+        SequenceData sequence = app.getSequence();
+        CameraTrigger camera = sequence.getCamera();
+        cameraRow.setEnabled(camera.isEnabled() && !camera.isBulb());
+        bulbSwitch.setEnabled(camera.isEnabled());
+        for (int i = 0; i < SequenceData.FLASH_COUNT; i++) {
+            flashRows[i].setEnabled(sequence.getFlash(i).isEnabled());
+        }
+    }
 
-            ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(getContext(), android.R.layout.select_dialog_item, deviceNames);
+    /**
+     * Stores the text of every field in the model and saves it once.
+     */
+    private void commitAll() {
+        if (app == null) {
+            return;
+        }
+        for (int i = 0; i < app.getSettings().getNumDrops(); i++) {
+            dropRows.get(i).start.apply();
+            dropRows.get(i).size.apply();
+        }
+        cameraRow.apply();
+        for (ValueDeltaRow row : flashRows) {
+            row.apply();
+        }
+        app.saveSequence();
+    }
 
-            builder.setAdapter(arrayAdapter, (dialog, which) -> {
-                // This runs when a device is selected (Analogous to when ListPicker.AfterPicking)
-                BluetoothDevice selectedDevice = deviceList.get(which);
+    // ----------------------------------------------------
+    // START button
+    // ----------------------------------------------------
 
-                // Start connection attempt
-                bluetoothHelper.connect(selectedDevice);
-                statusTextView.setText("Status: Connecting to " + selectedDevice.getAddress() + "...");
-            });
+    private void updateStartButton() {
+        if (startButton == null) {
+            return;
+        }
+        boolean connected = bluetoothHelper.isConnected();
+        boolean active = sequenceRunner.isActive();
 
-            builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
-            builder.show();
-        });
+        int colorRes;
+        if (active) {
+            colorRes = R.color.start_active;
+            startButton.setText(R.string.btn_start_active);
+        } else {
+            colorRes = connected ? R.color.start_ready : R.color.start_inactive;
+            startButton.setText(R.string.btn_start);
+        }
+        startButton.setBackgroundTintList(
+                ColorStateList.valueOf(ContextCompat.getColor(requireContext(), colorRes)));
+        startButton.setEnabled(connected && !active);
+    }
+
+    private void onStartClick() {
+        commitAll();
+        if (app.getSettings().isLoopModeOn()) {
+            // Loop Mode: START opens the Loop Page, which sends the sequences
+            startActivity(new Intent(requireContext(), LoopActivity.class));
+            return;
+        }
+        // Single Sequence Mode: send the data as it is, deltas are ignored
+        sequenceRunner.start(1);
     }
 }

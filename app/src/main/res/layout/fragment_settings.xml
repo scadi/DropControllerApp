@@ -1,14 +1,181 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".fragments.SettingsFragment">
 
-    <!-- TODO: Update blank fragment layout -->
-    <TextView
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:text="@string/hello_blank_fragment" />
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
 
-</FrameLayout>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="@string/settings_title"
+            android:textSize="24sp" />
+
+        <!-- Connection -->
+        <TextView
+            style="@style/SettingsSectionTitle"
+            android:text="@string/settings_connection" />
+
+        <Button
+            android:id="@+id/btn_connect"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/btn_not_connected" />
+
+        <!-- Drops -->
+        <TextView
+            style="@style/SettingsSectionTitle"
+            android:text="@string/settings_drops" />
+
+        <LinearLayout style="@style/SettingsRow">
+
+            <TextView
+                style="@style/SettingsRowLabel"
+                android:text="@string/settings_num_drops" />
+
+            <Spinner
+                android:id="@+id/sp_num_drops"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp" />
+        </LinearLayout>
+
+        <!-- Loop Mode -->
+        <TextView
+            style="@style/SettingsSectionTitle"
+            android:text="@string/settings_loop" />
+
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/sw_loop_mode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:text="@string/settings_loop_mode" />
+
+        <LinearLayout style="@style/SettingsRow">
+
+            <TextView
+                style="@style/SettingsRowLabel"
+                android:text="@string/settings_delay_method" />
+
+            <RadioGroup
+                android:id="@+id/rg_delay_method"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <RadioButton
+                    android:id="@+id/rb_delay_timer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp"
+                    android:text="@string/settings_delay_timer" />
+
+                <RadioButton
+                    android:id="@+id/rb_delay_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp"
+                    android:text="@string/settings_delay_button" />
+            </RadioGroup>
+        </LinearLayout>
+
+        <LinearLayout style="@style/SettingsRow">
+
+            <TextView
+                style="@style/SettingsRowLabel"
+                android:labelFor="@+id/et_wait_seconds"
+                android:text="@string/settings_wait_seconds" />
+
+            <EditText
+                android:id="@+id/et_wait_seconds"
+                style="@style/SettingsNumberField"
+                android:importantForAutofill="no" />
+        </LinearLayout>
+
+        <!-- Triggers -->
+        <TextView
+            style="@style/SettingsSectionTitle"
+            android:text="@string/settings_triggers" />
+
+        <LinearLayout style="@style/SettingsRow">
+
+            <TextView
+                style="@style/SettingsRowLabel"
+                android:labelFor="@+id/et_camera_pulse"
+                android:text="@string/settings_camera_pulse" />
+
+            <EditText
+                android:id="@+id/et_camera_pulse"
+                style="@style/SettingsNumberField"
+                android:importantForAutofill="no" />
+        </LinearLayout>
+
+        <LinearLayout style="@style/SettingsRow">
+
+            <TextView
+                style="@style/SettingsRowLabel"
+                android:labelFor="@+id/et_flash_pulse"
+                android:text="@string/settings_flash_pulse" />
+
+            <EditText
+                android:id="@+id/et_flash_pulse"
+                style="@style/SettingsNumberField"
+                android:importantForAutofill="no" />
+        </LinearLayout>
+
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/sw_camera"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:text="@string/settings_camera_enabled" />
+
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/sw_flash1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:text="@string/settings_flash1_enabled" />
+
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/sw_flash2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:text="@string/settings_flash2_enabled" />
+
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/sw_flash3"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:text="@string/settings_flash3_enabled" />
+
+        <!-- Sounds and reset -->
+        <TextView
+            style="@style/SettingsSectionTitle"
+            android:text="@string/settings_sounds" />
+
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/sw_sounds"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:text="@string/settings_sounds" />
+
+        <Button
+            android:id="@+id/btn_reset"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="@string/btn_reset" />
+    </LinearLayout>
+</ScrollView>

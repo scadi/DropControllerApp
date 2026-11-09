@@ -1,66 +1,43 @@
 package com.example.dropcontroller.fragments;
 
 import android.os.Bundle;
-
-import androidx.fragment.app.Fragment;
-
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+
+import com.example.dropcontroller.DropControllerApp;
 import com.example.dropcontroller.R;
+import com.example.dropcontroller.logic.GraphModel;
+import com.example.dropcontroller.views.GraphCanvasView;
 
 /**
- * A simple {@link Fragment} subclass.
- * Use the {@link GraphFragment#newInstance} factory method to
- * create an instance of this fragment.
+ * Graph tab: chart of the drop times and trigger times currently configured on the Drops and Settings tabs.
+ * The model is rebuilt every time the tab becomes visible.
  */
 public class GraphFragment extends Fragment {
 
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
-
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
+    private GraphCanvasView graphView;
 
     public GraphFragment() {
         // Required empty public constructor
     }
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment GraphFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static GraphFragment newInstance(String param1, String param2) {
-        GraphFragment fragment = new GraphFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.fragment_graph, container, false);
+        graphView = view.findViewById(R.id.graph_canvas);
+        return view;
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
-    }
-
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_graph, container, false);
+    public void onStart() {
+        super.onStart();
+        DropControllerApp app = (DropControllerApp) requireActivity().getApplication();
+        graphView.setModel(GraphModel.build(app.getSettings(), app.getSequence()));
     }
 }

@@ -4,34 +4,60 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="8dp"
     tools:context=".fragments.DropsFragment">
 
-    <LinearLayout
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- One item_drop per active drop, added by DropsFragment -->
+            <LinearLayout
+                android:id="@+id/ll_drops"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+            <TextView
+                style="@style/SettingsSectionTitle"
+                android:text="@string/settings_triggers" />
+
+            <include
+                android:id="@+id/row_camera"
+                layout="@layout/view_value_delta" />
+
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/sw_bulb"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="48dp"
+                android:text="@string/trigger_bulb" />
+
+            <include
+                android:id="@+id/row_flash1"
+                layout="@layout/view_value_delta" />
+
+            <include
+                android:id="@+id/row_flash2"
+                layout="@layout/view_value_delta" />
+
+            <include
+                android:id="@+id/row_flash3"
+                layout="@layout/view_value_delta" />
+        </LinearLayout>
+    </ScrollView>
+
+    <Button
+        android:id="@+id/btn_start"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingBottom="8dp">
-
-        <TextView
-            android:id="@+id/tv_connection_status"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Status: Disconnected"
-            android:textStyle="bold" />
-
-        <Button
-            android:id="@+id/btn_connect_bluetooth"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Connect" />
-    </LinearLayout>
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rv_drop_configs"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_margin="16dp"
+        android:text="@string/btn_start" />
 
 </LinearLayout>

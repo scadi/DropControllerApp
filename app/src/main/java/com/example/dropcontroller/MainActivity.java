@@ -1,41 +1,51 @@
 package com.example.dropcontroller;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.fragment.app.Fragment;
-
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.style.ForegroundColorSpan;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.RelativeLayout;
+import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
 
 import com.example.dropcontroller.fragments.AboutFragment;
 import com.example.dropcontroller.fragments.DrainFragment;
 import com.example.dropcontroller.fragments.DropsFragment;
 import com.example.dropcontroller.fragments.GraphFragment;
 import com.example.dropcontroller.fragments.SettingsFragment;
+import com.example.dropcontroller.services.BluetoothHelper;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-
-import android.Manifest; // Import the Manifest class
-import android.content.pm.PackageManager;
-import android.os.Build;
-import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
 
-// Мы добавили BottomNavigationView.OnNavigationItemSelectedListener
+// Handles tab selection through BottomNavigationView.OnNavigationItemSelectedListener
 public class MainActivity extends AppCompatActivity implements BottomNavigationView.OnNavigationItemSelectedListener {
 
     private Button splashButton;
     private RelativeLayout mainContentContainer;
     private BottomNavigationView bottomNavigationView;
+    private static final String STATE_MAIN_SHOWN = "main_shown";
     private final int REQUEST_BLUETOOTH_PERMISSIONS = 100; // Constant request code
+
+    private BluetoothHelper bluetoothHelper;
+    private final BluetoothHelper.Listener bluetoothListener = new BluetoothHelper.Listener() {
+        @Override
+        public void onStateChanged(@NonNull BluetoothHelper.State state) {
+            updateSettingsTabLabel();
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,43 +56,98 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         splashButton = findViewById(R.id.btn_splash_screen);
         mainContentContainer = findViewById(R.id.main_content_container);
         bottomNavigationView = findViewById(R.id.bottom_navigation);
+        bluetoothHelper = ((DropControllerApp) getApplication()).getBluetoothHelper();
 
 
-        // 2. Установка слушателя нажатий для кнопки заставки (Урок 1)
+        // 2. Splash screen button click listener
         splashButton.setOnClickListener(v -> {
-            splashButton.setVisibility(View.GONE);
-            mainContentContainer.setVisibility(View.VISIBLE);
+            showMainContent();
 
-            // Инициализация навигации после скрытия заставки
-            bottomNavigationView.setOnNavigationItemSelectedListener(this);
-
-            // Загрузка первого Фрагмента (DropsFragment) при старте
+            // Load the first fragment (DropsFragment) on start
             loadFragment(new DropsFragment());
         });
+
+        // After a rotation the activity is recreated: skip the splash screen. The fragment manager restores the
+        // current fragment and the bottom navigation restores the selected item by itself.
+        if (savedInstanceState != null && savedInstanceState.getBoolean(STATE_MAIN_SHOWN, false)) {
+            showMainContent();
+        }
 
         // Call the method to check permissions immediately after creating the Activity
         checkAndRequestBluetoothPermissions();
 
     }
 
-    // Метод для загрузки Фрагмента
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putBoolean(STATE_MAIN_SHOWN, mainContentContainer.getVisibility() == View.VISIBLE);
+    }
+
+    // Hides the splash screen and enables the tab navigation
+    private void showMainContent() {
+        splashButton.setVisibility(View.GONE);
+        mainContentContainer.setVisibility(View.VISIBLE);
+        bottomNavigationView.setOnNavigationItemSelectedListener(this);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        bluetoothHelper.addListener(bluetoothListener);
+        updateSettingsTabLabel();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        bluetoothHelper.removeListener(bluetoothListener);
+    }
+
+    // The Settings tab label is blue while a device is connected
+    private void updateSettingsTabLabel() {
+        MenuItem settingsItem = bottomNavigationView.getMenu().findItem(R.id.nav_settings);
+        if (settingsItem == null) {
+            return;
+        }
+        String title = getString(R.string.nav_settings);
+        if (bluetoothHelper.isConnected()) {
+            SpannableString colored = new SpannableString(title);
+            colored.setSpan(new ForegroundColorSpan(ContextCompat.getColor(this, R.color.nav_connected)),
+                    0, title.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            settingsItem.setTitle(colored);
+        } else {
+            settingsItem.setTitle(title);
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // Close the connection only when the app is really finishing (not on rotation)
+        if (isFinishing()) {
+            ((DropControllerApp) getApplication()).getBluetoothHelper().disconnect();
+        }
+    }
+
+    // Loads a fragment into the container
     private boolean loadFragment(Fragment fragment) {
         if (fragment != null) {
             getSupportFragmentManager()
                     .beginTransaction()
-                    .replace(R.id.fragment_container, fragment) // Замена текущего Фрагмента в контейнере
-                    .commit(); // Выполнение операции
+                    .replace(R.id.fragment_container, fragment) // Replace the current fragment in the container
+                    .commit(); // Commit the transaction
             return true;
         }
         return false;
     }
 
-    // 4. Обработчик нажатий на пункты меню
+    // 4. Menu item click handler
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
         Fragment fragment = null;
 
-        // R.id.nav_drops, R.id.nav_settings и т.д. - это ID из bottom_nav_menu.xml
+        // R.id.nav_drops, R.id.nav_settings etc. are IDs from bottom_nav_menu.xml
         int itemId = item.getItemId();
         if (itemId == R.id.nav_drops) {
             fragment = new DropsFragment();
@@ -153,10 +218,10 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
             if (allGranted) {
                 // All required permissions were granted
                 // You can proceed with Bluetooth initialization now
-                Toast.makeText(this, "Bluetooth permissions granted.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.permissions_granted, Toast.LENGTH_SHORT).show();
             } else {
                 // User denied one or more permissions
-                Toast.makeText(this, "Bluetooth functionality is limited without permissions.", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, R.string.permissions_denied, Toast.LENGTH_LONG).show();
             }
         }
     }

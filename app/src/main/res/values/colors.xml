@@ -2,4 +2,8 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="start_inactive">#FF9E9E9E</color>
+    <color name="start_ready">#FF2E7D32</color>
+    <color name="start_active">#FFF9A825</color>
+    <color name="nav_connected">#FF1E88E5</color>
 </resources>

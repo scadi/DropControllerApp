@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+
+    <TextView
+        android:id="@+id/tv_label"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1" />
+
+    <EditText
+        android:id="@+id/et_value"
+        style="@style/ValueField"
+        android:hint="@string/hint_ms"
+        android:importantForAutofill="no"
+        android:maxLength="4" />
+
+    <Button
+        android:id="@+id/btn_direction"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:minWidth="64dp"
+        android:minHeight="48dp"
+        android:paddingHorizontal="8dp"
+        android:text="@string/delta_inc" />
+
+    <EditText
+        android:id="@+id/et_delta"
+        style="@style/ValueField"
+        android:hint="@string/hint_delta"
+        android:importantForAutofill="no"
+        android:maxLength="3" />
+</LinearLayout>
