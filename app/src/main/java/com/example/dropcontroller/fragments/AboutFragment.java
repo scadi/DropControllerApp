@@ -54,16 +54,16 @@ public class AboutFragment extends Fragment {
     }
 
     @Override
-    public void onStart() {
-        super.onStart();
+    public void onResume() {
+        super.onResume();
         deviceSession.addListener(sessionListener);
         bluetoothHelper.addListener(bluetoothListener);
         updateFirmware();
     }
 
     @Override
-    public void onStop() {
-        super.onStop();
+    public void onPause() {
+        super.onPause();
         deviceSession.removeListener(sessionListener);
         bluetoothHelper.removeListener(bluetoothListener);
     }

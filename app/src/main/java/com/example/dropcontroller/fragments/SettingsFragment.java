@@ -143,8 +143,10 @@ public class SettingsFragment extends Fragment {
     }
 
     @Override
-    public void onStart() {
-        super.onStart();
+    public void onResume() {
+        super.onResume();
+        // Presets loaded on the Drops or Graph tab may have changed the settings while this tab was hidden
+        bindViews();
         bluetoothHelper.addListener(bluetoothListener);
         updateConnectButton(bluetoothHelper.getState());
     }
@@ -157,8 +159,8 @@ public class SettingsFragment extends Fragment {
     }
 
     @Override
-    public void onStop() {
-        super.onStop();
+    public void onPause() {
+        super.onPause();
         bluetoothHelper.removeListener(bluetoothListener);
         // A field that still has focus has not been committed yet
         commitNumberFields();

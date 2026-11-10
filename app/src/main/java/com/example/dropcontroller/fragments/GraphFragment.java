@@ -198,16 +198,16 @@ public class GraphFragment extends Fragment {
     }
 
     @Override
-    public void onStart() {
-        super.onStart();
+    public void onResume() {
+        super.onResume();
         graphView.setModel(GraphModel.build(app.getSettings(), app.getSequence()));
         sequenceRunner.addListener(sequenceListener);
         rebuildPresetList();
     }
 
     @Override
-    public void onStop() {
-        super.onStop();
+    public void onPause() {
+        super.onPause();
         sequenceRunner.removeListener(sequenceListener);
         // An edit that is still open is simply cancelled
         cancelEdit();
