@@ -70,8 +70,11 @@ public class DropsFragment extends Fragment {
     private BluetoothHelper bluetoothHelper;
     private SequenceRunner sequenceRunner;
 
+    // Cards are created on demand: only as many as the number of drops needs (inflating all of them is slow)
     private final List<View> dropViews = new ArrayList<>();
     private final List<DropRow> dropRows = new ArrayList<>();
+    private LinearLayout dropList;
+    private int[] cardColors;
     private ValueDeltaRow cameraRow;
     private final ValueDeltaRow[] flashRows = new ValueDeltaRow[SequenceData.FLASH_COUNT];
     private MaterialSwitch bulbSwitch;
@@ -138,16 +141,14 @@ public class DropsFragment extends Fragment {
         sequenceRunner = app.getSequenceRunner();
         SequenceData sequence = app.getSequence();
 
-        LinearLayout dropList = view.findViewById(R.id.ll_drops);
+        dropList = view.findViewById(R.id.ll_drops);
         int lightest = ContextCompat.getColor(requireContext(), R.color.drop_card_lightest);
         int darkest = ContextCompat.getColor(requireContext(), R.color.drop_card_darkest);
+        cardColors = new int[Limits.MAX_DROPS];
         for (int i = 0; i < Limits.MAX_DROPS; i++) {
-            int cardColor = ColorUtils.blendARGB(lightest, darkest, getCardShade(i));
-            View item = inflateDropCard(inflater, dropList, cardColor);
-            dropList.addView(item);
-            dropViews.add(item);
-            dropRows.add(createDropRow(item, i, sequence.getDrop(i)));
+            cardColors[i] = ColorUtils.blendARGB(lightest, darkest, getCardShade(i));
         }
+        ensureDropCards(inflater, app.getSettings().getNumDrops());
 
         createTriggerRows(view, sequence);
 
@@ -163,8 +164,8 @@ public class DropsFragment extends Fragment {
     }
 
     @Override
-    public void onStart() {
-        super.onStart();
+    public void onResume() {
+        super.onResume();
         bluetoothHelper.addListener(bluetoothListener);
         sequenceRunner.addListener(sequenceListener);
         // Settings may have changed on the Settings tab
@@ -172,8 +173,8 @@ public class DropsFragment extends Fragment {
     }
 
     @Override
-    public void onStop() {
-        super.onStop();
+    public void onPause() {
+        super.onPause();
         bluetoothHelper.removeListener(bluetoothListener);
         sequenceRunner.removeListener(sequenceListener);
         // A field that still has focus has not been committed yet
@@ -193,6 +194,19 @@ public class DropsFragment extends Fragment {
     // ----------------------------------------------------
     // Building the rows
     // ----------------------------------------------------
+
+    /**
+     * Creates the missing drop cards, so that the first {@code count} drops have one.
+     */
+    private void ensureDropCards(@NonNull LayoutInflater inflater, int count) {
+        SequenceData sequence = app.getSequence();
+        for (int i = dropViews.size(); i < count; i++) {
+            View item = inflateDropCard(inflater, dropList, cardColors[i]);
+            dropList.addView(item);
+            dropViews.add(item);
+            dropRows.add(createDropRow(item, i, sequence.getDrop(i)));
+        }
+    }
 
     /**
      * Position of a drop card on the color scale: 0 is the lightest color, 1 the darkest. Drop 1 starts at 20%, then
@@ -313,8 +327,11 @@ public class DropsFragment extends Fragment {
         AppSettings settings = app.getSettings();
         SequenceData sequence = app.getSequence();
 
+        // The number of drops may have grown on the Settings tab or by loading a preset
+        ensureDropCards(getLayoutInflater(), settings.getNumDrops());
+
         binding = true;
-        for (int i = 0; i < Limits.MAX_DROPS; i++) {
+        for (int i = 0; i < dropViews.size(); i++) {
             // Only the selected number of drops is active
             dropViews.get(i).setVisibility(i < settings.getNumDrops() ? View.VISIBLE : View.GONE);
             DropRow row = dropRows.get(i);
@@ -360,7 +377,7 @@ public class DropsFragment extends Fragment {
         if (app == null) {
             return;
         }
-        for (int i = 0; i < app.getSettings().getNumDrops(); i++) {
+        for (int i = 0; i < Math.min(app.getSettings().getNumDrops(), dropRows.size()); i++) {
             dropRows.get(i).start.apply();
             dropRows.get(i).size.apply();
         }

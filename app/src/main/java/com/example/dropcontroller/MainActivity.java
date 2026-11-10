@@ -10,16 +10,21 @@ import android.text.SpannableString;
 import android.text.style.ForegroundColorSpan;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
+import androidx.lifecycle.Lifecycle;
 
 import com.example.dropcontroller.fragments.AboutFragment;
 import com.example.dropcontroller.fragments.DrainFragment;
@@ -75,14 +80,15 @@ public class MainActivity extends AppCompatActivity implements NavigationBarView
         splashButton.setOnClickListener(v -> {
             showMainContent();
 
-            // Load the first fragment (DropsFragment) on start
-            loadFragment(new DropsFragment());
+            // Show the first tab (Drops) on start
+            showTab(R.id.nav_drops);
         });
 
         // After a rotation the activity is recreated: skip the splash screen. The fragment manager restores the
         // current fragment and the bottom navigation restores the selected item by itself.
         if (savedInstanceState != null && savedInstanceState.getBoolean(STATE_MAIN_SHOWN, false)) {
             showMainContent();
+            limitHiddenTabs();
         }
 
         // Call the method to check permissions immediately after creating the Activity
@@ -192,38 +198,91 @@ public class MainActivity extends AppCompatActivity implements NavigationBarView
         }
     }
 
-    // Loads a fragment into the container
-    private boolean loadFragment(Fragment fragment) {
-        if (fragment != null) {
-            getSupportFragmentManager()
-                    .beginTransaction()
-                    .replace(R.id.fragment_container, fragment) // Replace the current fragment in the container
-                    .commit(); // Commit the transaction
-            return true;
+    private static final int[] TAB_IDS = {
+            R.id.nav_drops, R.id.nav_settings, R.id.nav_graph, R.id.nav_drain, R.id.nav_about
+    };
+
+    private static String tabTag(int navItemId) {
+        return "tab_" + navItemId;
+    }
+
+    @Nullable
+    private static Fragment createTab(int navItemId) {
+        if (navItemId == R.id.nav_drops) {
+            return new DropsFragment();
+        } else if (navItemId == R.id.nav_settings) {
+            return new SettingsFragment();
+        } else if (navItemId == R.id.nav_graph) {
+            return new GraphFragment();
+        } else if (navItemId == R.id.nav_drain) {
+            return new DrainFragment();
+        } else if (navItemId == R.id.nav_about) {
+            return new AboutFragment();
         }
-        return false;
+        return null;
+    }
+
+    /**
+     * The restored fragment manager keeps the hidden tabs, but not their lifecycle limit, so set it again.
+     */
+    private void limitHiddenTabs() {
+        FragmentManager manager = getSupportFragmentManager();
+        FragmentTransaction transaction = manager.beginTransaction().setReorderingAllowed(true);
+        for (int tabId : TAB_IDS) {
+            Fragment tab = manager.findFragmentByTag(tabTag(tabId));
+            if (tab != null && tab.isHidden()) {
+                transaction.setMaxLifecycle(tab, Lifecycle.State.STARTED);
+            }
+        }
+        transaction.commit();
+    }
+
+    /**
+     * Shows a tab. A tab fragment is created on its first visit and then only hidden and shown, so switching back
+     * does not inflate its views again. A hidden fragment is limited to STARTED: it gets onPause, but not onStop.
+     */
+    private boolean showTab(int navItemId) {
+        FragmentManager manager = getSupportFragmentManager();
+        Fragment target = manager.findFragmentByTag(tabTag(navItemId));
+        if (target == null) {
+            target = createTab(navItemId);
+            if (target == null) {
+                return false;
+            }
+        }
+
+        // A field with focus is committed when it loses focus; the keyboard belongs to the tab that is left
+        View focused = getCurrentFocus();
+        if (focused != null) {
+            InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+            if (imm != null) {
+                imm.hideSoftInputFromWindow(focused.getWindowToken(), 0);
+            }
+            focused.clearFocus();
+        }
+
+        FragmentTransaction transaction = manager.beginTransaction().setReorderingAllowed(true);
+        for (int tabId : TAB_IDS) {
+            Fragment other = manager.findFragmentByTag(tabTag(tabId));
+            if (other != null && other != target && !other.isHidden()) {
+                transaction.hide(other).setMaxLifecycle(other, Lifecycle.State.STARTED);
+            }
+        }
+        if (target.isAdded()) {
+            transaction.show(target).setMaxLifecycle(target, Lifecycle.State.RESUMED);
+        } else {
+            transaction.add(R.id.fragment_container, target, tabTag(navItemId));
+        }
+        transaction.commit();
+        return true;
     }
 
     // 4. Menu item click handler
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-        Fragment fragment = null;
-
         // R.id.nav_drops, R.id.nav_settings etc. are IDs from bottom_nav_menu.xml
         int itemId = item.getItemId();
-        if (itemId == R.id.nav_drops) {
-            fragment = new DropsFragment();
-        } else if (itemId == R.id.nav_settings) {
-            fragment = new SettingsFragment();
-        } else if (itemId == R.id.nav_graph) {
-            fragment = new GraphFragment();
-        } else if (itemId == R.id.nav_drain) {
-            fragment = new DrainFragment();
-        } else if (itemId == R.id.nav_about) {
-            fragment = new AboutFragment();
-        }
-
-        boolean loaded = loadFragment(fragment);
+        boolean loaded = showTab(itemId);
         if (loaded) {
             updateToolbarTitle(itemId);
         }

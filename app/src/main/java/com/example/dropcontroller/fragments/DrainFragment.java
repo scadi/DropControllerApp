@@ -85,16 +85,16 @@ public class DrainFragment extends Fragment {
     }
 
     @Override
-    public void onStart() {
-        super.onStart();
+    public void onResume() {
+        super.onResume();
         bluetoothHelper.addListener(bluetoothListener);
         setAllSwitches(false);
         updateEnabled();
     }
 
     @Override
-    public void onStop() {
-        super.onStop();
+    public void onPause() {
+        super.onPause();
         bluetoothHelper.removeListener(bluetoothListener);
         if (bluetoothHelper.isConnected()) {
             bluetoothHelper.send(ProtocolEncoder.allValvesClose());

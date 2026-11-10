@@ -116,7 +116,7 @@ app/src/main/res/              layout/, menu/, drawable/, values/, values-night/
 
 ### Android Patterns
 - Fragments use the `newInstance(...)` + `Bundle` args pattern; `onCreateView` inflates `R.layout.fragment_*`.
-- Tab navigation: `getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, fragment).commit()`.
+- Tab navigation (`MainActivity.showTab`): each tab fragment is added once (tag `tab_<nav id>`) and then only hidden/shown, with `setMaxLifecycle(STARTED)` while hidden. A hidden tab gets `onPause`, but not `onStop`, and its views stay alive: register Bluetooth/sequence listeners and refresh from the shared model in `onResume`/`onPause`, not in `onStart`/`onStop`.
 - No DI: construct collaborators manually (shared objects live in `DropControllerApp`). Use callback interfaces implemented by the fragment (e.g. `BluetoothHelper.Listener`).
 - Do not hold an Activity/Fragment `Context` in long-lived objects; prefer `getApplicationContext()` (current `BluetoothHelper` risks a leak).
 - Release resources in lifecycle methods (`onDestroy`: disconnect Bluetooth, stop handlers/timers, remove callbacks).
