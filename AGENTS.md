@@ -20,7 +20,7 @@ This project is a rewrite of the original App Inventor 2 app (Play Store id `app
 
 - **Device**: dropController V3 (Arduino + HC-06 module), water drop photography. Bluetooth Classic, device is paired in system settings first (PIN `1234`), then picked from the paired-devices list in the app (Settings tab, NOT-CONNECTED / CONNECTED button).
 - **Tabs**: Drops, Settings, Drain, Graph, About (About shows app version and, once connected, device firmware version).
-- **Settings**: number of drops (1-9), Loop Mode (OFF/ON, delay method TIMER/BUTTON, wait time in seconds), trigger pulse times (ms, default 50), camera/flash trigger enable switches, sounds on/off, RESET (restores all settings and drop data to defaults).
+- **Settings**: number of drops (1-9), Loop Mode (OFF/ON, delay method TIMER/BUTTON, wait time in seconds), trigger pulse times (ms, default 50), camera/flash trigger enable switches, sounds on/off, dark theme on/off (a device preference like sounds: not part of a preset, kept by RESET), RESET (restores all settings and drop data to defaults).
 - **Drop data** (per drop): SOL (valve 1-6), START time (ms, 0-9999), START delta (INC/DEC, 0-999), SIZE (valve open time in ms), SIZE delta (INC/DEC, 0-999).
 - **Triggers**: one camera trigger (modes: OFF, ON + shutter time, ON + Bulb; Bulb opens the shutter just before the sequence and closes it just after) and three flash triggers (each OFF or ON with a time in ms). Camera and flash times can also have deltas. When a trigger is OFF in Settings its controls on the Drops tab are hidden (the original greys them out; changed on request).
 - **START button**: grey/inactive when not connected, green when connected, shows ACTIVE while the device runs a sequence (device: yellow LED = idle, green LED = sequence active).
@@ -30,6 +30,8 @@ This project is a rewrite of the original App Inventor 2 app (Play Store id `app
 - **Loop Page** shows per drop: SOL, START with delta in brackets, SIZE with delta in brackets, STOP (computed by the app), plus CT, FT1, FT2, FT3 lines.
 - **Validation**: the original app does not validate drop data (overlapping drops on one valve are allowed). Do not add validation unless asked.
 - **Graph tab**: chart of drop times and trigger times; the shutter is shown open from its start time for the exposure duration.
+- **Presets** (new feature, not in the original app): the Drops tab has SAVE and LOAD icon buttons next to START. A preset is a named copy of the drop data and the setup settings (number of drops, Loop Mode, delay method, wait time, pulse times); the Sounds switch is not part of it. Names are 1-40 characters and unique ignoring case. Presets are disabled while a sequence runs. The Graph tab lists the presets as cards (chart, Load, long-press name to rename, trash to delete) and has Export / Import buttons.
+- **Export / import**: all presets go into one JSON file (`format` marker `dropcontroller-presets`, `version` 1) chosen with the system file picker (no storage permission). Import skips a preset with the same name and content, and saves one with the same name but different content as `Name1`, `Name2`, ... Format code is in `config/PresetJson`, import rules in `PresetRepository.importAll`.
 - **Drain tab**: opens a valve manually for draining.
 - The wire protocol is defined by the Arduino sketch in `firmware/` and summarized in `docs/PROTOCOL.md`. The existing `D%d,F%s,S%d` message in `DropsFragment` is a tutorial example, not the real protocol. Do not change message formats without asking.
 
@@ -57,7 +59,7 @@ Run from the repo root. On Windows use `.\gradlew.bat` (or `./gradlew` in bash).
 - Single instrumented test (needs a connected device/emulator):
   `./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.dropcontroller.ExampleInstrumentedTest#useAppContext`
 
-Unit tests for the model, storage and `logic/` classes live in `src/test` (JUnit4); `src/androidTest` only has the stock example. There is no mocking library or Robolectric; add dependencies via the version catalog if needed.
+Unit tests for the model, storage and `logic/` classes live in `src/test` (JUnit4); `src/androidTest` only has the stock example. There is no mocking library or Robolectric; add dependencies via the version catalog if needed. `org.json:json` is a `testImplementation` dependency, because `org.json` is only a stub in JVM unit tests.
 
 ## Project Layout
 ```

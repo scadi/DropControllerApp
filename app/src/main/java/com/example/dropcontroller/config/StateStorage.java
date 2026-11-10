@@ -12,6 +12,7 @@ import com.example.dropcontroller.data.FlashTrigger;
 import com.example.dropcontroller.data.Limits;
 import com.example.dropcontroller.data.LoopDelayMethod;
 import com.example.dropcontroller.data.SequenceData;
+import com.example.dropcontroller.data.ThemeMode;
 
 /**
  * Saves and loads {@link AppSettings} and {@link SequenceData} (Analogous to the TinyDB calls of the original app).
@@ -26,6 +27,7 @@ public class StateStorage {
     private static final String KEY_CAMERA_PULSE = "settings.cameraPulseMs";
     private static final String KEY_FLASH_PULSE = "settings.flashPulseMs";
     private static final String KEY_SOUNDS = "settings.sounds";
+    private static final String KEY_THEME_MODE = "settings.themeMode";
 
     private final KeyValueStore store;
 
@@ -41,6 +43,7 @@ public class StateStorage {
         store.storeInt(KEY_CAMERA_PULSE, settings.getCameraPulseMs());
         store.storeInt(KEY_FLASH_PULSE, settings.getFlashPulseMs());
         store.storeBoolean(KEY_SOUNDS, settings.isSoundsOn());
+        store.storeString(KEY_THEME_MODE, settings.getThemeMode().name());
     }
 
     public void loadSettings(@NonNull AppSettings settings) {
@@ -52,6 +55,7 @@ public class StateStorage {
         settings.setCameraPulseMs(store.getInt(KEY_CAMERA_PULSE, defaults.getCameraPulseMs()));
         settings.setFlashPulseMs(store.getInt(KEY_FLASH_PULSE, defaults.getFlashPulseMs()));
         settings.setSoundsOn(store.getBoolean(KEY_SOUNDS, defaults.isSoundsOn()));
+        settings.setThemeMode(parseThemeMode(store.getString(KEY_THEME_MODE, null), defaults.getThemeMode()));
     }
 
     public void saveSequence(@NonNull SequenceData data) {
@@ -126,6 +130,18 @@ public class StateStorage {
             }
         }
         return DeltaDirection.INC;
+    }
+
+    @NonNull
+    private static ThemeMode parseThemeMode(@Nullable String name, @NonNull ThemeMode fallback) {
+        if (name != null) {
+            try {
+                return ThemeMode.valueOf(name);
+            } catch (IllegalArgumentException e) {
+                // Unknown stored value; use the default
+            }
+        }
+        return fallback;
     }
 
     @NonNull

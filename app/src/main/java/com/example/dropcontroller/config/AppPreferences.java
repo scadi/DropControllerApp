@@ -49,4 +49,20 @@ public class AppPreferences implements KeyValueStore {
     public boolean getBoolean(@NonNull String tag, boolean defaultValue) {
         return sharedPreferences.getBoolean(tag, defaultValue);
     }
+
+    @Override
+    public void remove(@NonNull String tag) {
+        sharedPreferences.edit().remove(tag).apply();
+    }
+
+    @Override
+    public void removeWithPrefix(@NonNull String prefix) {
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        for (String tag : sharedPreferences.getAll().keySet()) {
+            if (tag.startsWith(prefix)) {
+                editor.remove(tag);
+            }
+        }
+        editor.apply();
+    }
 }

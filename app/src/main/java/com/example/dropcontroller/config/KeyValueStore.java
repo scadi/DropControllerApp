@@ -21,4 +21,14 @@ public interface KeyValueStore {
     void storeBoolean(@NonNull String tag, boolean value);
 
     boolean getBoolean(@NonNull String tag, boolean defaultValue);
+
+    /**
+     * Removes the value stored under the tag. Does nothing when there is none.
+     */
+    void remove(@NonNull String tag);
+
+    /**
+     * Removes every value whose tag starts with the prefix.
+     */
+    void removeWithPrefix(@NonNull String prefix);
 }

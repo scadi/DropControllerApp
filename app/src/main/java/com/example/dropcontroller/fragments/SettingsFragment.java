@@ -2,6 +2,7 @@ package com.example.dropcontroller.fragments;
 
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothDevice;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -25,6 +26,7 @@ import com.example.dropcontroller.data.AppSettings;
 import com.example.dropcontroller.data.Limits;
 import com.example.dropcontroller.data.LoopDelayMethod;
 import com.example.dropcontroller.data.SequenceData;
+import com.example.dropcontroller.data.ThemeMode;
 import com.example.dropcontroller.services.BluetoothHelper;
 import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.materialswitch.MaterialSwitch;
@@ -52,6 +54,7 @@ public class SettingsFragment extends Fragment {
     private MaterialSwitch cameraSwitch;
     private final MaterialSwitch[] flashSwitches = new MaterialSwitch[SequenceData.FLASH_COUNT];
     private MaterialSwitch soundsSwitch;
+    private MaterialSwitch darkThemeSwitch;
 
     // True while the views are filled from the model, so the change listeners do not write back
     private boolean binding;
@@ -94,6 +97,7 @@ public class SettingsFragment extends Fragment {
         flashSwitches[1] = view.findViewById(R.id.sw_flash2);
         flashSwitches[2] = view.findViewById(R.id.sw_flash3);
         soundsSwitch = view.findViewById(R.id.sw_sounds);
+        darkThemeSwitch = view.findViewById(R.id.sw_dark_theme);
 
         setupNumDropsSpinner();
         setupListeners(view);
@@ -151,7 +155,14 @@ public class SettingsFragment extends Fragment {
             flashSwitches[i].setChecked(sequence.getFlash(i).isEnabled());
         }
         soundsSwitch.setChecked(settings.isSoundsOn());
+        // Shows the theme that is on screen now, also while the mode is still "follow the system"
+        darkThemeSwitch.setChecked(isNightModeActive());
         binding = false;
+    }
+
+    private boolean isNightModeActive() {
+        int nightMask = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+        return nightMask == Configuration.UI_MODE_NIGHT_YES;
     }
 
     private void setupListeners(@NonNull View view) {
@@ -203,6 +214,15 @@ public class SettingsFragment extends Fragment {
             if (!binding) {
                 app.getSettings().setSoundsOn(checked);
                 app.saveSettings();
+            }
+        });
+
+        darkThemeSwitch.setOnCheckedChangeListener((button, checked) -> {
+            if (!binding) {
+                app.getSettings().setThemeMode(checked ? ThemeMode.DARK : ThemeMode.LIGHT);
+                app.saveSettings();
+                // Recreates the open activities with the new theme
+                app.applyThemeMode();
             }
         });
 

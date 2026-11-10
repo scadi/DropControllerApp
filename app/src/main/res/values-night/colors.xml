@@ -29,9 +29,16 @@
     <color name="start_inactive">#FF616161</color>
     <color name="start_ready">#FF4CAF50</color>
     <color name="start_active">#FFFFCA28</color>
+    <color name="start_inactive_text">#FFFFFFFF</color>
+    <color name="start_ready_text">#FF0B1F10</color>
+    <color name="start_active_text">#FF111A1F</color>
     <color name="nav_connected">#FF64B5F6</color>
 
     <color name="graph_drop">#FF64B5F6</color>
     <color name="graph_flash">#FFFFCA28</color>
     <color name="graph_camera">#FF81C784</color>
+
+    <!-- Drop cards on the Drops tab: the lightest and the darkest color of the scale (dark scheme, light text) -->
+    <color name="drop_card_lightest">#FF4A7080</color>
+    <color name="drop_card_darkest">#FF1B3340</color>
 </resources>

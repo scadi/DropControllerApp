@@ -20,6 +20,8 @@ public class AppSettings {
     private int cameraPulseMs = DEFAULT_PULSE_MS;
     private int flashPulseMs = DEFAULT_PULSE_MS;
     private boolean soundsOn = true;
+    // A device preference: not part of a preset and not changed by RESET
+    private ThemeMode themeMode = ThemeMode.SYSTEM;
 
     public int getNumDrops() {
         return numDrops;
@@ -78,6 +80,19 @@ public class AppSettings {
         this.soundsOn = soundsOn;
     }
 
+    @NonNull
+    public ThemeMode getThemeMode() {
+        return themeMode;
+    }
+
+    public void setThemeMode(@NonNull ThemeMode themeMode) {
+        this.themeMode = themeMode;
+    }
+
+    /**
+     * Restores the defaults of the app settings. The theme is kept: it is a device preference, and switching it
+     * on RESET would be a surprise.
+     */
     public void resetToDefaults() {
         numDrops = DEFAULT_NUM_DROPS;
         loopModeOn = false;
@@ -86,6 +101,30 @@ public class AppSettings {
         cameraPulseMs = DEFAULT_PULSE_MS;
         flashPulseMs = DEFAULT_PULSE_MS;
         soundsOn = true;
+    }
+
+    /**
+     * Copies the settings that describe a setup: everything except the Sounds switch, which is a device preference.
+     */
+    public void copySetupFrom(@NonNull AppSettings other) {
+        numDrops = other.numDrops;
+        loopModeOn = other.loopModeOn;
+        delayMethod = other.delayMethod;
+        waitSeconds = other.waitSeconds;
+        cameraPulseMs = other.cameraPulseMs;
+        flashPulseMs = other.flashPulseMs;
+    }
+
+    /**
+     * Compares the settings that describe a setup (see {@link #copySetupFrom(AppSettings)}).
+     */
+    public boolean hasSameSetupAs(@NonNull AppSettings other) {
+        return numDrops == other.numDrops
+                && loopModeOn == other.loopModeOn
+                && delayMethod == other.delayMethod
+                && waitSeconds == other.waitSeconds
+                && cameraPulseMs == other.cameraPulseMs
+                && flashPulseMs == other.flashPulseMs;
     }
 
     @Override
@@ -103,11 +142,13 @@ public class AppSettings {
                 && waitSeconds == other.waitSeconds
                 && cameraPulseMs == other.cameraPulseMs
                 && flashPulseMs == other.flashPulseMs
-                && soundsOn == other.soundsOn;
+                && soundsOn == other.soundsOn
+                && themeMode == other.themeMode;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(numDrops, loopModeOn, delayMethod, waitSeconds, cameraPulseMs, flashPulseMs, soundsOn);
+        return Objects.hash(numDrops, loopModeOn, delayMethod, waitSeconds, cameraPulseMs, flashPulseMs, soundsOn,
+                themeMode);
     }
 }

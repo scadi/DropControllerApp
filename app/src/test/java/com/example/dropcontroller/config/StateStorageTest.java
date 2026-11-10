@@ -2,55 +2,15 @@ package com.example.dropcontroller.config;
 
 import static org.junit.Assert.*;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-
 import com.example.dropcontroller.data.AppSettings;
 import com.example.dropcontroller.data.DeltaDirection;
 import com.example.dropcontroller.data.LoopDelayMethod;
 import com.example.dropcontroller.data.SequenceData;
+import com.example.dropcontroller.data.ThemeMode;
 
 import org.junit.Test;
 
-import java.util.HashMap;
-import java.util.Map;
-
 public class StateStorageTest {
-
-    private static class MapStore implements KeyValueStore {
-        final Map<String, Object> values = new HashMap<>();
-
-        @Override
-        public void storeString(@NonNull String tag, @Nullable String value) {
-            values.put(tag, value);
-        }
-
-        @Nullable
-        @Override
-        public String getString(@NonNull String tag, @Nullable String defaultValue) {
-            return values.containsKey(tag) ? (String) values.get(tag) : defaultValue;
-        }
-
-        @Override
-        public void storeInt(@NonNull String tag, int value) {
-            values.put(tag, value);
-        }
-
-        @Override
-        public int getInt(@NonNull String tag, int defaultValue) {
-            return values.containsKey(tag) ? (Integer) values.get(tag) : defaultValue;
-        }
-
-        @Override
-        public void storeBoolean(@NonNull String tag, boolean value) {
-            values.put(tag, value);
-        }
-
-        @Override
-        public boolean getBoolean(@NonNull String tag, boolean defaultValue) {
-            return values.containsKey(tag) ? (Boolean) values.get(tag) : defaultValue;
-        }
-    }
 
     @Test
     public void loadOnEmptyStore_givesDefaults() {
@@ -110,6 +70,32 @@ public class StateStorageTest {
         storage.loadSequence(loaded);
 
         assertEquals(saved, loaded);
+    }
+
+    @Test
+    public void themeMode_roundTrip() {
+        StateStorage storage = new StateStorage(new MapStore());
+        AppSettings saved = new AppSettings();
+        saved.setThemeMode(ThemeMode.DARK);
+
+        storage.saveSettings(saved);
+        AppSettings loaded = new AppSettings();
+        storage.loadSettings(loaded);
+
+        assertEquals(ThemeMode.DARK, loaded.getThemeMode());
+    }
+
+    @Test
+    public void themeMode_unknownStoredValue_fallsBackToSystem() {
+        MapStore store = new MapStore();
+        store.storeString("settings.themeMode", "PURPLE");
+        StateStorage storage = new StateStorage(store);
+
+        AppSettings settings = new AppSettings();
+        settings.setThemeMode(ThemeMode.LIGHT);
+        storage.loadSettings(settings);
+
+        assertEquals(ThemeMode.SYSTEM, settings.getThemeMode());
     }
 
     @Test

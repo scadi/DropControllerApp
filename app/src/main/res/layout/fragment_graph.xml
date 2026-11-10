@@ -19,5 +19,51 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" />
         </com.google.android.material.card.MaterialCardView>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/graph_presets_title"
+                android:textAppearance="@style/TextAppearance.DropController.ScreenTitle" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_presets_export"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/btn_presets_export" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_presets_import"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="@string/btn_presets_import" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tv_presets_empty"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/graph_presets_empty"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textColor="?attr/colorOnSurfaceVariant" />
+
+        <!-- One item_preset_card per saved preset, added by GraphFragment -->
+        <LinearLayout
+            android:id="@+id/ll_presets"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
     </LinearLayout>
 </ScrollView>

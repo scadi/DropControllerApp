@@ -21,11 +21,20 @@ Mark an item `[x]` here when it has been dealt with, and say where.
 - [ ] Replace deprecated `BottomNavigationView.OnNavigationItemSelectedListener` with
       `OnItemSelectedListener` (`MainActivity`).
 - [ ] Bump outdated dependencies reported by lint (AGP, appcompat, material, activity, constraintlayout).
-- [ ] Remove unused `colors.xml` entries (`black`, `white`) or use them in the theme.
+- [x] Remove unused `colors.xml` entries (`black`, `white`) or use them in the theme (deleted in stage 7).
+- [ ] Colors on a device: check the drop card shades (light and dark), the START label on all three states and the
+      darker flash bar in the light graph. With the current scale (20-78%) every light card gets dark text (5.3:1 or
+      better) and every dark card gets light text (6.4:1 or better).
+- [ ] Dark theme switch: not tested on a device. Check that toggling it on the Settings tab keeps the tab and the
+      values, that the Loop Page (if open) follows, and that the first launch follows the system theme.
+- [ ] Dark theme switch: there is no "follow the system" choice after the first tap (`ThemeMode.SYSTEM` is only the
+      initial value). A three-way choice (System / Light / Dark) could replace the switch.
+- [ ] Light theme: the surface/background (1.09:1) and card outline (1.65:1) contrast is low by Material 3 design;
+      raise `md_outline_variant` if the cards blend into the background on a real screen.
 - [ ] Tablet / landscape layouts for the Drops tab (9 drop rows are tall).
 - [ ] Keep the screen on while a loop sequence is running.
 - [ ] Foreground service for long loop runs, so Android does not kill the timer when the screen is off.
-- [ ] Export / import of drop presets.
+- [x] Export / import of drop presets (stages 8-10 of `PLAN.md`).
 
 ## Stage 2 remarks
 - [ ] Settings: the "Camera trigger" and "Flash trigger 1-3" switches write `SequenceData`; stage 3 must read the same
@@ -107,3 +116,29 @@ Mark an item `[x]` here when it has been dealt with, and say where.
 - [x] Hard-coded strings in `activity_main.xml`, `bottom_nav_menu.xml`, `fragment_graph.xml`
       (moved to `strings.xml` in stage 6).
 - [x] `lint` warned about the unnecessary wrapper `LinearLayout` in `fragment_drops.xml` (gone in stage 3).
+
+## Stage 8 remarks
+- [ ] Not tested on a device: the Save / Load dialogs, the START + SAVE/LOAD button block (START should match the
+      height of the two stacked buttons), keyboard Done in the name field, rotation with an open dialog (it is
+      dismissed on rotation), loading a preset and then opening the Settings tab.
+- [ ] Hidden drops (beyond the number of drops) are saved and loaded too, and take part in `hasSameContentAs`.
+- [ ] Loading a preset while Loop Mode is ON keeps the Loop Mode setting from the preset; the Loop Page is not
+      involved (it covers the tabs while a loop runs).
+- [ ] `PresetRepository.getAll()` reads every preset from SharedPreferences on each call; fine for a handful of
+      presets. Cache it if the Graph tab (stage 9) makes this slow.
+- [ ] The Save dialog overwrites by name without comparing content; an identical setup under the same name is simply
+      written again.
+
+## Stage 9 and 10 remarks
+- [ ] Not tested on a device: preset cards (5+ presets, scrolling), rename by long press and the keyboard, delete
+      dialog, rotation and dark mode, the system file pickers (start folder Downloads), export, moving the file to
+      another phone, import on a clean install, importing the same file twice (second import: all skipped).
+- [ ] A rename in progress is cancelled on rotation or when the tab is left (accepted in the plan).
+- [ ] Export is all presets in one file; a single-preset export could be added later.
+- [ ] The duplicate check compares all nine drops, also the hidden ones (beyond the number of drops).
+- [ ] A preset is not loadable from the Loop Page (decided: no).
+- [ ] Sharing presets between phones works by moving the JSON file; there is no built-in share button.
+- [ ] Import rule for renamed presets: if `Name1` already holds identical content, the incoming preset is skipped
+      instead of creating `Name2`. This keeps repeated imports from adding copies.
+- [ ] Import reads at most 5 million characters; a larger file is rejected with a message.
+- [ ] Import/export file work runs on one background thread; the repository is only used on the main thread.

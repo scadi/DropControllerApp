@@ -142,6 +142,30 @@ public class DeltaTest {
     }
 
     @Test
+    public void appSettings_resetToDefaults_keepsThemeMode() {
+        AppSettings settings = new AppSettings();
+        settings.setThemeMode(ThemeMode.DARK);
+        settings.setNumDrops(5);
+
+        settings.resetToDefaults();
+
+        assertEquals(ThemeMode.DARK, settings.getThemeMode());
+        assertEquals(AppSettings.DEFAULT_NUM_DROPS, settings.getNumDrops());
+    }
+
+    @Test
+    public void appSettings_copySetupFrom_doesNotCopyThemeMode() {
+        AppSettings target = new AppSettings();
+        target.setThemeMode(ThemeMode.LIGHT);
+        AppSettings source = new AppSettings();
+        source.setThemeMode(ThemeMode.DARK);
+
+        target.copySetupFrom(source);
+
+        assertEquals(ThemeMode.LIGHT, target.getThemeMode());
+    }
+
+    @Test
     public void appSettings_resetToDefaults_restoresDefaults() {
         AppSettings settings = new AppSettings();
         settings.setNumDrops(5);

@@ -1,11 +1,17 @@
 package com.example.dropcontroller.fragments;
 
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.Context;
 import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.os.Bundle;
+import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.view.inputmethod.EditorInfo;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -14,24 +20,34 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.ColorInt;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
+import androidx.core.graphics.ColorUtils;
 import androidx.fragment.app.Fragment;
 
 import com.example.dropcontroller.DropControllerApp;
 import com.example.dropcontroller.LoopActivity;
 import com.example.dropcontroller.R;
+import com.example.dropcontroller.config.PresetRepository;
 import com.example.dropcontroller.data.AppSettings;
 import com.example.dropcontroller.data.CameraTrigger;
 import com.example.dropcontroller.data.DropData;
 import com.example.dropcontroller.data.FlashTrigger;
 import com.example.dropcontroller.data.Limits;
+import com.example.dropcontroller.data.Preset;
 import com.example.dropcontroller.data.SequenceData;
 import com.example.dropcontroller.services.BluetoothHelper;
 import com.example.dropcontroller.services.SequenceRunner;
 import com.example.dropcontroller.views.ValueDeltaRow;
+import com.google.android.material.card.MaterialCardView;
+import com.google.android.material.color.MaterialColors;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.materialswitch.MaterialSwitch;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,6 +61,11 @@ import java.util.List;
  */
 public class DropsFragment extends Fragment {
 
+    // Color scale of the drop cards: start position and the alternating steps (share of the lightest-darkest range)
+    private static final float CARD_SHADE_START = 0.20f;
+    private static final float CARD_SHADE_UP = 0.40f;
+    private static final float CARD_SHADE_DOWN = -0.34f;
+
     private DropControllerApp app;
     private BluetoothHelper bluetoothHelper;
     private SequenceRunner sequenceRunner;
@@ -56,6 +77,9 @@ public class DropsFragment extends Fragment {
     private MaterialSwitch bulbSwitch;
     private View triggersCard;
     private Button startButton;
+    private Button saveButton;
+    private Button loadButton;
+    private AlertDialog dialog;
 
     // True while the views are filled from the model, so the change listeners do not write back
     private boolean binding;
@@ -115,8 +139,11 @@ public class DropsFragment extends Fragment {
         SequenceData sequence = app.getSequence();
 
         LinearLayout dropList = view.findViewById(R.id.ll_drops);
+        int lightest = ContextCompat.getColor(requireContext(), R.color.drop_card_lightest);
+        int darkest = ContextCompat.getColor(requireContext(), R.color.drop_card_darkest);
         for (int i = 0; i < Limits.MAX_DROPS; i++) {
-            View item = inflater.inflate(R.layout.item_drop, dropList, false);
+            int cardColor = ColorUtils.blendARGB(lightest, darkest, getCardShade(i));
+            View item = inflateDropCard(inflater, dropList, cardColor);
             dropList.addView(item);
             dropViews.add(item);
             dropRows.add(createDropRow(item, i, sequence.getDrop(i)));
@@ -126,6 +153,10 @@ public class DropsFragment extends Fragment {
 
         startButton = view.findViewById(R.id.btn_start);
         startButton.setOnClickListener(v -> onStartClick());
+        saveButton = view.findViewById(R.id.btn_preset_save);
+        saveButton.setOnClickListener(v -> onSaveClick());
+        loadButton = view.findViewById(R.id.btn_preset_load);
+        loadButton.setOnClickListener(v -> onLoadClick());
 
         bindViews();
         return view;
@@ -149,9 +180,50 @@ public class DropsFragment extends Fragment {
         commitAll();
     }
 
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        // Avoid a leaked dialog window when the view is re-created (rotation)
+        if (dialog != null) {
+            dialog.dismiss();
+            dialog = null;
+        }
+    }
+
     // ----------------------------------------------------
     // Building the rows
     // ----------------------------------------------------
+
+    /**
+     * Position of a drop card on the color scale: 0 is the lightest color, 1 the darkest. Drop 1 starts at 20%, then
+     * the position goes up by 40% and down by 34% in turn (20, 60, 26, 66, 32, 72, ...), so the cards alternate
+     * between light and dark and slowly get darker overall.
+     */
+    private static float getCardShade(int index) {
+        int steps = index / 2;
+        float shade = CARD_SHADE_START + steps * (CARD_SHADE_UP + CARD_SHADE_DOWN);
+        return index % 2 == 0 ? shade : shade + CARD_SHADE_UP;
+    }
+
+    /**
+     * Inflates a drop card with the given background color. The card content is inflated with a theme overlay
+     * (light or dark text, whichever has the better contrast), so the fields stay readable on every color.
+     */
+    @NonNull
+    private View inflateDropCard(@NonNull LayoutInflater inflater, @NonNull ViewGroup parent,
+                                 @ColorInt int cardColor) {
+        boolean lightText = ColorUtils.calculateContrast(Color.WHITE, cardColor)
+                > ColorUtils.calculateContrast(ContextCompat.getColor(requireContext(), R.color.drop_card_dark_text),
+                cardColor);
+        Context themed = new ContextThemeWrapper(requireContext(), lightText
+                ? R.style.ThemeOverlay_DropController_CardLightText
+                : R.style.ThemeOverlay_DropController_CardDarkText);
+        View item = inflater.cloneInContext(themed).inflate(R.layout.item_drop, parent, false);
+        MaterialCardView card = (MaterialCardView) item;
+        card.setCardBackgroundColor(cardColor);
+        card.setStrokeColor(ColorUtils.blendARGB(cardColor, Color.BLACK, 0.15f));
+        return item;
+    }
 
     @NonNull
     private DropRow createDropRow(@NonNull View item, int index, @NonNull DropData drop) {
@@ -163,8 +235,18 @@ public class DropsFragment extends Fragment {
         for (int sol = Limits.MIN_SOLENOID; sol <= Limits.MAX_SOLENOID; sol++) {
             values.add(String.valueOf(sol));
         }
+        // The selected value is drawn on the card, so it gets the card's text color; the popup keeps its own
+        int valueColor = MaterialColors.getColor(item, com.google.android.material.R.attr.colorOnSurface, Color.BLACK);
         ArrayAdapter<String> adapter =
-                new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, values);
+                new ArrayAdapter<String>(requireContext(), android.R.layout.simple_spinner_item, values) {
+                    @NonNull
+                    @Override
+                    public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+                        TextView text = (TextView) super.getView(position, convertView, parent);
+                        text.setTextColor(valueColor);
+                        return text;
+                    }
+                };
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         solenoid.setAdapter(adapter);
         solenoid.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -294,17 +376,25 @@ public class DropsFragment extends Fragment {
         boolean connected = bluetoothHelper.isConnected();
         boolean active = sequenceRunner.isActive();
 
+        // Each state has its own text color, so the label stays readable on grey, green and yellow
         int colorRes;
+        int textColorRes;
         if (active) {
             colorRes = R.color.start_active;
+            textColorRes = R.color.start_active_text;
             startButton.setText(R.string.btn_start_active);
         } else {
             colorRes = connected ? R.color.start_ready : R.color.start_inactive;
+            textColorRes = connected ? R.color.start_ready_text : R.color.start_inactive_text;
             startButton.setText(R.string.btn_start);
         }
         startButton.setBackgroundTintList(
                 ColorStateList.valueOf(ContextCompat.getColor(requireContext(), colorRes)));
+        startButton.setTextColor(ContextCompat.getColor(requireContext(), textColorRes));
         startButton.setEnabled(connected && !active);
+        // Presets cannot change while a sequence is running
+        saveButton.setEnabled(!active);
+        loadButton.setEnabled(!active);
     }
 
     private void onStartClick() {
@@ -316,5 +406,124 @@ public class DropsFragment extends Fragment {
         }
         // Single Sequence Mode: send the data as it is, deltas are ignored
         sequenceRunner.start(1);
+    }
+
+    // ----------------------------------------------------
+    // Presets
+    // ----------------------------------------------------
+
+    private void onSaveClick() {
+        if (sequenceRunner.isActive()) {
+            return;
+        }
+        // Store the open fields first, so the preset contains what is on the screen
+        commitAll();
+
+        View content = getLayoutInflater().inflate(R.layout.dialog_preset_name, null);
+        TextInputLayout inputLayout = content.findViewById(R.id.til_preset_name);
+        TextInputEditText input = content.findViewById(R.id.et_preset_name);
+
+        AlertDialog saveDialog = new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.preset_save_title)
+                .setView(content)
+                .setPositiveButton(R.string.action_save, null)
+                .setNegativeButton(android.R.string.cancel, null)
+                .create();
+        saveDialog.setOnShowListener(d -> {
+            // Set the click listener here, so an invalid name keeps the dialog open
+            saveDialog.getButton(DialogInterface.BUTTON_POSITIVE)
+                    .setOnClickListener(v -> confirmSave(saveDialog, inputLayout, input));
+            input.requestFocus();
+        });
+        input.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                confirmSave(saveDialog, inputLayout, input);
+                return true;
+            }
+            return false;
+        });
+        saveDialog.getWindow().setSoftInputMode(
+                WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
+        showDialog(saveDialog);
+    }
+
+    private void confirmSave(@NonNull AlertDialog saveDialog, @NonNull TextInputLayout inputLayout,
+                             @NonNull TextInputEditText input) {
+        PresetRepository repository = app.getPresetRepository();
+        String name = input.getText() == null ? "" : input.getText().toString().trim();
+
+        Preset existing = repository.findByName(name);
+        PresetRepository.NameCheck check = repository.checkName(name, existing == null ? -1 : existing.getId());
+        if (check == PresetRepository.NameCheck.EMPTY) {
+            inputLayout.setError(getString(R.string.preset_name_empty));
+            return;
+        }
+        if (check == PresetRepository.NameCheck.TOO_LONG) {
+            inputLayout.setError(getString(R.string.preset_name_too_long, PresetRepository.MAX_NAME_LENGTH));
+            return;
+        }
+        inputLayout.setError(null);
+
+        if (existing != null) {
+            confirmOverwrite(saveDialog, existing, name);
+            return;
+        }
+        repository.add(name, app.getSettings(), app.getSequence());
+        saveDialog.dismiss();
+        Toast.makeText(requireContext(), getString(R.string.preset_saved, name), Toast.LENGTH_SHORT).show();
+    }
+
+    private void confirmOverwrite(@NonNull AlertDialog saveDialog, @NonNull Preset existing, @NonNull String name) {
+        AlertDialog overwriteDialog = new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.preset_overwrite_title)
+                .setMessage(getString(R.string.preset_overwrite_message, existing.getName()))
+                .setPositiveButton(R.string.preset_overwrite, (d, which) -> {
+                    app.getPresetRepository().overwrite(existing.getId(), name, app.getSettings(), app.getSequence());
+                    saveDialog.dismiss();
+                    Toast.makeText(requireContext(), getString(R.string.preset_saved, name), Toast.LENGTH_SHORT)
+                            .show();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .create();
+        // The save dialog stays behind it, so Cancel returns to the name field
+        overwriteDialog.show();
+    }
+
+    private void onLoadClick() {
+        if (sequenceRunner.isActive()) {
+            return;
+        }
+        List<Preset> presets = app.getPresetRepository().getAll();
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.preset_load_title)
+                .setNegativeButton(android.R.string.cancel, null);
+        if (presets.isEmpty()) {
+            builder.setMessage(R.string.preset_load_empty);
+        } else {
+            String[] names = new String[presets.size()];
+            for (int i = 0; i < names.length; i++) {
+                names[i] = presets.get(i).getName();
+            }
+            builder.setItems(names, (d, which) -> loadPreset(presets.get(which)));
+        }
+        showDialog(builder.create());
+    }
+
+    private void loadPreset(@NonNull Preset preset) {
+        if (!app.applyPreset(preset)) {
+            Toast.makeText(requireContext(), R.string.preset_busy, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        bindViews();
+        Toast.makeText(requireContext(), getString(R.string.preset_loaded, preset.getName()), Toast.LENGTH_SHORT)
+                .show();
+    }
+
+    private void showDialog(@NonNull AlertDialog newDialog) {
+        if (dialog != null) {
+            dialog.dismiss();
+        }
+        dialog = newDialog;
+        newDialog.show();
     }
 }

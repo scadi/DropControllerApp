@@ -74,4 +74,26 @@
     <style name="TextAppearance.DropController.CardTitle" parent="TextAppearance.Material3.TitleMedium">
         <item name="android:textColor">?attr/colorPrimary</item>
     </style>
+
+    <!-- Drop cards are colored, so their content gets its own colors: light text on dark cards ... -->
+    <style name="ThemeOverlay.DropController.CardLightText" parent="ThemeOverlay.Material3">
+        <item name="colorPrimary">@color/drop_card_light_text</item>
+        <item name="colorOnSurface">@color/drop_card_light_text</item>
+        <item name="colorOnSurfaceVariant">@color/drop_card_light_text_variant</item>
+        <item name="colorOutline">@color/drop_card_light_outline</item>
+        <item name="colorOutlineVariant">@color/drop_card_light_outline</item>
+        <item name="colorSecondaryContainer">@color/drop_card_light_container</item>
+        <item name="colorOnSecondaryContainer">@color/drop_card_light_text</item>
+    </style>
+
+    <!-- ... and dark text on light cards -->
+    <style name="ThemeOverlay.DropController.CardDarkText" parent="ThemeOverlay.Material3">
+        <item name="colorPrimary">@color/drop_card_dark_primary</item>
+        <item name="colorOnSurface">@color/drop_card_dark_text</item>
+        <item name="colorOnSurfaceVariant">@color/drop_card_dark_text_variant</item>
+        <item name="colorOutline">@color/drop_card_dark_outline</item>
+        <item name="colorOutlineVariant">@color/drop_card_dark_outline</item>
+        <item name="colorSecondaryContainer">@color/drop_card_dark_container</item>
+        <item name="colorOnSecondaryContainer">@color/drop_card_dark_on_container</item>
+    </style>
 </resources>

@@ -250,6 +250,13 @@
                     android:minHeight="48dp"
                     android:text="@string/settings_sounds" />
 
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/sw_dark_theme"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp"
+                    android:text="@string/settings_dark_theme" />
+
                 <!-- RESET erases all drop data, so it is outlined in the error color -->
                 <Button
                     android:id="@+id/btn_reset"

@@ -70,14 +70,41 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- START: tinted by DropsFragment (grey / green / yellow) -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_start"
+    <!-- One line: START (tinted by DropsFragment: grey / green / yellow) takes the free width,
+         the SAVE and LOAD icon buttons are as big as their icons. -->
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="64dp"
+        android:layout_height="wrap_content"
         android:layout_margin="16dp"
-        android:text="@string/btn_start"
-        android:textAppearance="?attr/textAppearanceTitleLarge"
-        app:cornerRadius="32dp" />
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_start"
+            android:layout_width="0dp"
+            android:layout_height="64dp"
+            android:layout_weight="1"
+            android:text="@string/btn_start"
+            android:textAppearance="?attr/textAppearanceTitleLarge"
+            app:cornerRadius="32dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_preset_save"
+            style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:contentDescription="@string/btn_preset_save"
+            app:icon="@drawable/ic_preset_save_black_24dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_preset_load"
+            style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:contentDescription="@string/btn_preset_load"
+            app:icon="@drawable/ic_preset_load_black_24dp" />
+    </LinearLayout>
 
 </LinearLayout>
