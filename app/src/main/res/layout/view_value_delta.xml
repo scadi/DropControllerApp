@@ -19,7 +19,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:drawableTint="?attr/colorOnSurfaceVariant"
+            app:drawableTint="?attr/colorOnSurfaceVariant"
             android:gravity="center_vertical"
             android:textAppearance="?attr/textAppearanceLabelLarge"
             android:textColor="?attr/colorOnSurfaceVariant" />

@@ -127,8 +127,8 @@ public class SequenceRunner {
             return false;
         }
 
-        long sendTimeMs = messages.size() * MESSAGE_PACING_MS;
-        long timeoutMs = sendTimeMs + SequenceTiming.sequenceEnd(settings, sequenceData) + FINISH_TIMEOUT_MARGIN_MS;
+        long timeoutMs = SequenceTiming.finishTimeoutMs(settings, sequenceData, messages.size(),
+                MESSAGE_PACING_MS, FINISH_TIMEOUT_MARGIN_MS);
         setActive(true);
         mainHandler.postDelayed(timeoutRunnable, timeoutMs);
         return true;

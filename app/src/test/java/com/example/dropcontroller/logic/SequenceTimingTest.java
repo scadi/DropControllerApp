@@ -81,4 +81,25 @@ public class SequenceTimingTest {
 
         assertEquals(130, SequenceTiming.sequenceEnd(settings, data));
     }
+
+    @Test
+    public void finishTimeoutMs_sumsSendTimeSequenceEndAndMargin() {
+        AppSettings settings = new AppSettings();
+        SequenceData data = new SequenceData();
+        data.getDrop(0).setStartTime(100);
+        data.getDrop(0).setSize(30);
+
+        // 10 messages * 30 ms + 130 ms sequence end + 5000 ms margin
+        assertEquals(5430, SequenceTiming.finishTimeoutMs(settings, data, 10, 30, 5000));
+    }
+
+    @Test
+    public void finishTimeoutMs_noMessages_isSequenceEndPlusMargin() {
+        AppSettings settings = new AppSettings();
+        SequenceData data = new SequenceData();
+        data.getDrop(0).setStartTime(100);
+        data.getDrop(0).setSize(30);
+
+        assertEquals(1130, SequenceTiming.finishTimeoutMs(settings, data, 0, 30, 1000));
+    }
 }

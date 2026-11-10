@@ -78,4 +78,17 @@ public final class SequenceTiming {
         }
         return end;
     }
+
+    /**
+     * How long to wait for the device's [FTS] after sending a sequence: the time to send the messages, the time
+     * the device needs for the sequence, and a safety margin.
+     *
+     * @param messageCount number of messages sent for the sequence
+     * @param pacingMs     delay between two messages
+     * @param marginMs     extra time after the latest STOP time before giving up
+     */
+    public static long finishTimeoutMs(@NonNull AppSettings settings, @NonNull SequenceData data,
+                                       int messageCount, long pacingMs, long marginMs) {
+        return messageCount * pacingMs + sequenceEnd(settings, data) + marginMs;
+    }
 }

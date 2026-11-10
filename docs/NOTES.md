@@ -20,7 +20,10 @@ Mark an item `[x]` here when it has been dealt with, and say where.
 - [ ] Auto-reconnect after a lost connection.
 - [x] Replaced deprecated `BottomNavigationView.OnNavigationItemSelectedListener` with
       `NavigationBarView.OnItemSelectedListener` (`MainActivity`).
-- [ ] Bump outdated dependencies reported by lint (AGP, appcompat, material, activity, constraintlayout).
+- [x] Bumped the dependencies reported by lint: appcompat 1.8.0, material 1.14.0, activity 1.13.0, constraintlayout
+      2.2.2 (`libs.versions.toml`). Not tested on a device: material 1.14 can change the look of chips, switches and
+      segmented buttons, so do a visual pass. Left on purpose: `compileSdk`/`targetSdk` 36 (37 is available; raising
+      `targetSdk` changes runtime behavior and needs its own test pass).
 - [x] Remove unused `colors.xml` entries (`black`, `white`) or use them in the theme (deleted in stage 7).
 - [ ] Colors on a device: check the drop card shades (light and dark), the START label on all three states and the
       darker flash bar in the light graph. With the current scale (20-78%) every light card gets dark text (5.3:1 or
@@ -57,8 +60,8 @@ Mark an item `[x]` here when it has been dealt with, and say where.
 ## Stage 3 remarks
 - [ ] Not tested on a device or emulator: layouts, focus handling of number fields and the START flow are only
       verified by compiling and lint. A manual pass is needed (esp. keyboard Done, rotation, 9 drops scrolling).
-- [ ] `SequenceRunner` uses `Handler`/`Looper`, so it has no JVM unit test. Idea: extract the timeout calculation
-      or inject a scheduler interface to make it testable.
+- [x] `SequenceRunner` uses `Handler`/`Looper`, so it has no JVM unit test. The timeout calculation is now
+      `SequenceTiming.finishTimeoutMs` (plain Java, covered by `SequenceTimingTest`); the `Handler` part stays untested.
 - [ ] The camera ON/OFF and Bulb split: ON/OFF lives in Settings (switch), Bulb lives on the Drops tab (switch).
       The original has one 3-state camera control (OFF / ON + time / ON + Bulb). Consider a single control on the
       Drops tab for parity.

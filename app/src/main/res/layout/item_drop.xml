@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     style="@style/Widget.DropController.Card">
 
     <LinearLayout
@@ -20,10 +21,10 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:drawablePadding="6dp"
-                android:drawableStart="@drawable/ic_drop_black_24dp"
-                android:drawableTint="?attr/colorPrimary"
                 android:gravity="center_vertical"
-                android:textAppearance="@style/TextAppearance.DropController.CardTitle" />
+                android:textAppearance="@style/TextAppearance.DropController.CardTitle"
+                app:drawableStartCompat="@drawable/ic_drop_black_24dp"
+                app:drawableTint="?attr/colorPrimary" />
 
             <TextView
                 android:layout_width="wrap_content"
