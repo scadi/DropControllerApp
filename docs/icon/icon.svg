@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- dropController app icon: the visible 72 dp area of the 108 dp adaptive icon (see res/drawable/ic_launcher_*.xml) -->
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="18 18 72 72">
+    <rect x="0" y="0" width="108" height="108" fill="#0088FF"/>
+    <g fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round">
+        <!-- d: bowl -->
+        <path d="M31,60a9,10.5 0 1,0 18,0a9,10.5 0 1,0 -18,0"/>
+        <!-- d: stem -->
+        <path d="M49,38L49,70.5"/>
+        <!-- C: open to the right -->
+        <path d="M77.36,40.59A13,17.5 0 1,0 77.36,67.41"/>
+    </g>
+</svg>
