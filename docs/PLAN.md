@@ -84,6 +84,7 @@ Status legend: `[ ]` todo, `[x]` done.
       sequence start, sequence end ([FTS] from the device) and the end of the Loop Mode countdown.
       Done: `SoundPlayer` (tones from `ToneGenerator`, no audio files, honors the Sounds switch),
       `LoopController.Listener.onCountdownFinished`, `SequenceRunner.Listener.onDeviceFinished`.
+      Closed: no further work on sounds (user's decision); the device check of the tones is dropped from the plan.
 - [x] Move hard-coded strings to `strings.xml`.
 - [x] Manifest: `uses-feature` for Bluetooth, `neverForLocation` flag on `BLUETOOTH_SCAN`,
       catch `SecurityException` when permissions are denied (already done in `BluetoothHelper`).
@@ -150,6 +151,10 @@ Steps:
 - [x] RESET asks for confirmation first (`MaterialAlertDialogBuilder`, "Reset everything?"; Cancel keeps the data).
   New behavior, not in the original app: RESET erases all drop data. Dialogs in `SettingsFragment` are dismissed in
   `onDestroyView` so rotation does not leak a window.
+- [x] Number of drops in Settings: a row of 9 drop icons instead of the dropdown. Touching or dragging over the n-th
+  icon selects n drops (the first n icons are filled with the accent color, the rest are dimmed, the number is shown
+  next to the title). Appearance and input only: the value still goes through `AppSettings.setNumDrops` and is saved
+  at once. The `Spinner` and `bg_dropdown` stay in use for SOL on the Drops tab.
 - [ ] Run `./gradlew assembleDebug lintDebug testDebugUnitTest` after each step; manual pass on a device
       (rotation, dark mode, 9 drops scrolling, keyboard Done). The commands pass; the device pass is left.
 

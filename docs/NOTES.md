@@ -12,23 +12,23 @@ Mark an item `[x]` here when it has been dealt with, and say where.
 - [x] Which events play sounds in the original app: still unknown. Sounds were added for events chosen with the
       user (sequence start, sequence end, Loop Mode countdown end); see "Sounds" below.
 - [ ] Original behavior when the CONNECTED button is tapped while connected (the app currently disconnects).
-- [ ] Original behavior of the RESET button: does it ask for confirmation?
+- [ ] Original behavior of the RESET button: does it ask for confirmation? (The app asks now, by decision.)
 
 ## Improvement ideas (not in the plan)
-- [ ] Ask for confirmation before RESET (it erases all drop data). Skipped in stage 2 to match the original.
+- [x] Ask for confirmation before RESET (it erases all drop data). Done in stage 7 (`SettingsFragment.confirmReset`).
 - [ ] Remember the last used device and offer a one-tap reconnect.
 - [ ] Auto-reconnect after a lost connection.
-- [ ] Replace deprecated `BottomNavigationView.OnNavigationItemSelectedListener` with
-      `OnItemSelectedListener` (`MainActivity`).
+- [x] Replaced deprecated `BottomNavigationView.OnNavigationItemSelectedListener` with
+      `NavigationBarView.OnItemSelectedListener` (`MainActivity`).
 - [ ] Bump outdated dependencies reported by lint (AGP, appcompat, material, activity, constraintlayout).
 - [x] Remove unused `colors.xml` entries (`black`, `white`) or use them in the theme (deleted in stage 7).
 - [ ] Colors on a device: check the drop card shades (light and dark), the START label on all three states and the
       darker flash bar in the light graph. With the current scale (20-78%) every light card gets dark text (5.3:1 or
       better) and every dark card gets light text (6.4:1 or better).
-- [ ] Dark theme switch: not tested on a device. Check that toggling it on the Settings tab keeps the tab and the
+- [ ] Theme selector: not tested on a device. Check that changing it on the Settings tab keeps the tab and the
       values, that the Loop Page (if open) follows, and that the first launch follows the system theme.
-- [ ] Dark theme switch: there is no "follow the system" choice after the first tap (`ThemeMode.SYSTEM` is only the
-      initial value). A three-way choice (System / Light / Dark) could replace the switch.
+- [x] Dark theme switch had no "follow the system" choice after the first tap. Replaced by a SYSTEM / LIGHT / DARK
+      segmented button (stage 7).
 - [ ] Light theme: the surface/background (1.09:1) and card outline (1.65:1) contrast is low by Material 3 design;
       raise `md_outline_variant` if the cards blend into the background on a real screen.
 - [ ] Tablet / landscape layouts for the Drops tab (9 drop rows are tall).
@@ -101,14 +101,16 @@ Mark an item `[x]` here when it has been dealt with, and say where.
       (`PROTOCOL.md`); the device does not check it over Bluetooth, so it is not enforced.
 
 ## Sounds (stage 6)
-- [ ] Not tested on a device: tones, volume (`STREAM_MUSIC`, 80%) and how they sound need a manual check.
-- [ ] The tones are `ToneGenerator` beeps (start `TONE_PROP_BEEP`, end `TONE_PROP_ACK`, countdown end
+Closed on the user's request: sounds are not worked on any more, so nothing here is a todo. The remarks stay as
+background for a future change.
+- [x] Not tested on a device: tones, volume (`STREAM_MUSIC`, 80%) and how they sound need a manual check.
+- [x] The tones are `ToneGenerator` beeps (start `TONE_PROP_BEEP`, end `TONE_PROP_ACK`, countdown end
       `TONE_PROP_BEEP2`). Replace them with audio files if better sounds are wanted.
-- [ ] A start tone is skipped when another tone played less than 500 ms before (the countdown-end tone or the end tone
+- [x] A start tone is skipped when another tone played less than 500 ms before (the countdown-end tone or the end tone
       when the wait time is 0), because the new tone would cut the old one.
-- [ ] No sound for a timeout or a lost connection (only for [FTS] from the device).
-- [ ] The countdown-end tone also plays if the Loop Page is open but the screen is off, as long as the app runs.
-- [ ] `SoundPlayer` is not covered by JVM tests (Android audio classes); the events behind it are
+- [x] No sound for a timeout or a lost connection (only for [FTS] from the device).
+- [x] The countdown-end tone also plays if the Loop Page is open but the screen is off, as long as the app runs.
+- [x] `SoundPlayer` is not covered by JVM tests (Android audio classes); the events behind it are
       (`LoopControllerTest`).
 
 ## Technical debt

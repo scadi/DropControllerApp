@@ -1,17 +1,22 @@
 package com.example.dropcontroller.fragments;
 
+import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothDevice;
+import android.graphics.Color;
 import android.os.Bundle;
+import android.view.HapticFeedbackConstants;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
-import android.widget.Spinner;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -28,6 +33,8 @@ import com.example.dropcontroller.data.SequenceData;
 import com.example.dropcontroller.data.ThemeMode;
 import com.example.dropcontroller.services.BluetoothHelper;
 import com.google.android.material.button.MaterialButtonToggleGroup;
+import com.google.android.material.color.MaterialColors;
+
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.materialswitch.MaterialSwitch;
 
@@ -45,7 +52,8 @@ public class SettingsFragment extends Fragment {
     private BluetoothHelper bluetoothHelper;
 
     private Button connectButton;
-    private Spinner numDropsSpinner;
+    private LinearLayout numDropsRow;
+    private TextView numDropsValue;
     private MaterialSwitch loopModeSwitch;
     private MaterialButtonToggleGroup delayMethodGroup;
     private EditText waitSecondsField;
@@ -88,7 +96,8 @@ public class SettingsFragment extends Fragment {
         bluetoothHelper = app.getBluetoothHelper();
 
         connectButton = view.findViewById(R.id.btn_connect);
-        numDropsSpinner = view.findViewById(R.id.sp_num_drops);
+        numDropsRow = view.findViewById(R.id.ll_num_drops);
+        numDropsValue = view.findViewById(R.id.tv_num_drops_value);
         loopModeSwitch = view.findViewById(R.id.sw_loop_mode);
         delayMethodGroup = view.findViewById(R.id.tg_delay_method);
         waitSecondsField = view.findViewById(R.id.et_wait_seconds);
@@ -101,7 +110,7 @@ public class SettingsFragment extends Fragment {
         soundsSwitch = view.findViewById(R.id.sw_sounds);
         themeGroup = view.findViewById(R.id.tg_theme);
 
-        setupNumDropsSpinner();
+        setupNumDropsRow();
         setupListeners(view);
         bindViews();
         return view;
@@ -133,15 +142,55 @@ public class SettingsFragment extends Fragment {
     // Model <-> views
     // ----------------------------------------------------
 
-    private void setupNumDropsSpinner() {
-        List<String> values = new ArrayList<>();
+    // One drop icon per allowed count; touching the n-th icon (tap or drag) selects n drops
+    @SuppressLint("ClickableViewAccessibility")
+    private void setupNumDropsRow() {
+        LayoutInflater inflater = LayoutInflater.from(requireContext());
         for (int i = Limits.MIN_DROPS; i <= Limits.MAX_DROPS; i++) {
-            values.add(String.valueOf(i));
+            numDropsRow.addView(inflater.inflate(R.layout.item_num_drop, numDropsRow, false));
         }
-        ArrayAdapter<String> adapter =
-                new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, values);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        numDropsSpinner.setAdapter(adapter);
+
+        numDropsRow.setOnTouchListener((row, event) -> {
+            int action = event.getActionMasked();
+            if (action == MotionEvent.ACTION_DOWN) {
+                // Keep a horizontal drag away from the parent ScrollView
+                row.getParent().requestDisallowInterceptTouchEvent(true);
+            }
+            if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_MOVE
+                    || action == MotionEvent.ACTION_UP) {
+                int count = numDropsAt(event.getX(), row.getWidth());
+                if (count != app.getSettings().getNumDrops()) {
+                    app.getSettings().setNumDrops(count);
+                    showNumDrops(count);
+                    row.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK);
+                }
+            }
+            if (action == MotionEvent.ACTION_UP) {
+                app.saveSettings();
+                row.performClick();
+            } else if (action == MotionEvent.ACTION_CANCEL) {
+                // The model may hold a value picked during the drag; save it so the screen and storage agree
+                app.saveSettings();
+            }
+            return true;
+        });
+    }
+
+    private static int numDropsAt(float x, int width) {
+        int count = Limits.MIN_DROPS + (int) (x / width * (Limits.MAX_DROPS - Limits.MIN_DROPS + 1));
+        return Math.max(Limits.MIN_DROPS, Math.min(Limits.MAX_DROPS, count));
+    }
+
+    // Fills the first icons with the accent color, dims the rest, and shows the number
+    private void showNumDrops(int count) {
+        int active = MaterialColors.getColor(numDropsRow, androidx.appcompat.R.attr.colorPrimary, Color.BLUE);
+        int inactive = MaterialColors.getColor(numDropsRow,
+                com.google.android.material.R.attr.colorOutlineVariant, Color.GRAY);
+        for (int i = 0; i < numDropsRow.getChildCount(); i++) {
+            ImageView icon = (ImageView) numDropsRow.getChildAt(i);
+            icon.setColorFilter(i < count ? active : inactive);
+        }
+        numDropsValue.setText(String.valueOf(count));
     }
 
     /**
@@ -152,7 +201,7 @@ public class SettingsFragment extends Fragment {
         SequenceData sequence = app.getSequence();
 
         binding = true;
-        numDropsSpinner.setSelection(settings.getNumDrops() - Limits.MIN_DROPS);
+        showNumDrops(settings.getNumDrops());
         loopModeSwitch.setChecked(settings.isLoopModeOn());
         delayMethodGroup.check(settings.getDelayMethod() == LoopDelayMethod.TIMER
                 ? R.id.btn_delay_timer : R.id.btn_delay_button);
@@ -193,20 +242,6 @@ public class SettingsFragment extends Fragment {
     private void setupListeners(@NonNull View view) {
         connectButton.setOnClickListener(v -> onConnectButtonClick());
 
-        numDropsSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View selected, int position, long id) {
-                if (!binding) {
-                    app.getSettings().setNumDrops(position + Limits.MIN_DROPS);
-                    app.saveSettings();
-                }
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-                // Nothing to do
-            }
-        });
 
         loopModeSwitch.setOnCheckedChangeListener((button, checked) -> {
             if (!binding) {

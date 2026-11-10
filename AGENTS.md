@@ -82,7 +82,7 @@ app/src/main/res/              layout/, menu/, drawable/, values/, values-night/
   `BluetoothHelper.Listener` in `onStart`/`onStop`.
 - `androidx.recyclerview` is not declared explicitly in `app/build.gradle.kts`; it arrives transitively. Add it to `libs.versions.toml` before using it.
 - `lintDebug` can report a stale manifest error from cached analysis; rerun with `--rerun-tasks` before chasing it.
-- `BluetoothAdapter.getDefaultAdapter()` and `setOnNavigationItemSelectedListener` are deprecated but in use.
+- `BluetoothAdapter.getDefaultAdapter()` is deprecated but in use.
 - Several files have uncommitted work in progress; check `git status` and do not revert changes you did not make.
 
 ## Code Style Guidelines
@@ -95,7 +95,7 @@ app/src/main/res/              layout/, menu/, drawable/, values/, values-night/
 
 ### Imports
 - Individual imports only; no wildcards (the only exception is `import static org.junit.Assert.*;` in tests).
-- Group and order: `android.*`, `androidx.*`, `com.example.*`, `java.*`/`javax.*`, then static imports last. Do not add duplicates (`MainActivity` currently duplicates `AppCompatActivity`; remove when touching that file).
+- Group and order: `android.*`, `androidx.*`, `com.example.*`, `java.*`/`javax.*`, then static imports last. Do not add duplicates.
 - Remove unused imports in files you edit.
 
 ### Types and Language Features

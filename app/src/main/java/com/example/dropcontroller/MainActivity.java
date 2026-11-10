@@ -30,12 +30,13 @@ import com.example.dropcontroller.services.BluetoothHelper;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.color.MaterialColors;
+import com.google.android.material.navigation.NavigationBarView;
 
 import java.util.ArrayList;
 import java.util.List;
 
-// Handles tab selection through BottomNavigationView.OnNavigationItemSelectedListener
-public class MainActivity extends AppCompatActivity implements BottomNavigationView.OnNavigationItemSelectedListener {
+// Handles tab selection through NavigationBarView.OnItemSelectedListener
+public class MainActivity extends AppCompatActivity implements NavigationBarView.OnItemSelectedListener {
 
     private View splashContainer;
     private Button splashButton;
@@ -99,7 +100,7 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
     private void showMainContent() {
         splashContainer.setVisibility(View.GONE);
         mainContentContainer.setVisibility(View.VISIBLE);
-        bottomNavigationView.setOnNavigationItemSelectedListener(this);
+        bottomNavigationView.setOnItemSelectedListener(this);
         updateToolbarTitle(bottomNavigationView.getSelectedItemId());
     }
 
@@ -205,7 +206,7 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
 
     // 4. Menu item click handler
     @Override
-    public boolean onNavigationItemSelected(MenuItem item) {
+    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         Fragment fragment = null;
 
         // R.id.nav_drops, R.id.nav_settings etc. are IDs from bottom_nav_menu.xml

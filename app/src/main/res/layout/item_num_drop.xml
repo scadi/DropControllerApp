@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Touch is handled by the parent row (tap or drag over the icons), so the icon itself is not clickable -->
+<ImageView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="0dp"
+    android:layout_height="48dp"
+    android:layout_weight="1"
+    android:importantForAccessibility="no"
+    android:padding="5dp"
+    android:scaleType="fitCenter"
+    android:src="@drawable/ic_drop_black_24dp" />

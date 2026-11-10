@@ -64,18 +64,25 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:labelFor="@+id/sp_num_drops"
                         android:text="@string/settings_num_drops"
                         android:textAppearance="?attr/textAppearanceBodyLarge" />
 
-                    <Spinner
-                        android:id="@+id/sp_num_drops"
+                    <TextView
+                        android:id="@+id/tv_num_drops_value"
                         android:layout_width="wrap_content"
-                        android:layout_height="48dp"
-                        android:background="@drawable/bg_dropdown"
-                        android:minWidth="72dp"
-                        android:paddingHorizontal="8dp" />
+                        android:layout_height="wrap_content"
+                        android:textAppearance="?attr/textAppearanceTitleLarge"
+                        android:textColor="?attr/colorPrimary" />
                 </LinearLayout>
+
+                <!-- One drop icon per allowed count (filled in code): tapping the n-th icon selects n drops -->
+                <LinearLayout
+                    android:id="@+id/ll_num_drops"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:contentDescription="@string/settings_num_drops"
+                    android:orientation="horizontal" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
