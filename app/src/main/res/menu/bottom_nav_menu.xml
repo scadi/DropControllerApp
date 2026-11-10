@@ -3,21 +3,21 @@
     <item
         android:id="@+id/nav_drops"
         android:icon="@drawable/ic_drop_black_24dp"
-        android:title="Drops" />
+        android:title="@string/nav_drops" />
     <item
         android:id="@+id/nav_settings"
         android:icon="@drawable/ic_settings_black_24dp"
-        android:title="Settings" />
+        android:title="@string/nav_settings" />
     <item
         android:id="@+id/nav_graph"
         android:icon="@drawable/ic_graph_black_24dp"
-        android:title="Graph" />
+        android:title="@string/nav_graph" />
     <item
         android:id="@+id/nav_drain"
         android:icon="@drawable/ic_drain_black_24dp"
-        android:title="Drain" />
+        android:title="@string/nav_drain" />
     <item
         android:id="@+id/nav_about"
         android:icon="@drawable/ic_info_black_24dp"
-        android:title="About" />
+        android:title="@string/nav_about" />
 </menu>

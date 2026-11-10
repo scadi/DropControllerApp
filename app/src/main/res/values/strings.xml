@@ -1,5 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">DropControllerApp</string>
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
+
+    <string name="splash_start">Start Drop Controller</string>
+    <string name="splash_title">dropController</string>
+    <string name="splash_subtitle">Water drop photography</string>
+
+    <!-- Top app bar connection indicator -->
+    <string name="status_not_connected">Not connected</string>
+    <string name="status_connecting">Connecting…</string>
+    <string name="status_connected">Connected</string>
+
+    <!-- Bottom navigation -->
+    <string name="nav_drops">Drops</string>
+    <string name="nav_settings">Settings</string>
+    <string name="nav_graph">Graph</string>
+    <string name="nav_drain">Drain</string>
+    <string name="nav_about">About</string>
+
+    <!-- Drops tab -->
+    <string name="btn_start">START</string>
+    <string name="btn_start_active">ACTIVE</string>
+    <string name="drop_title">DROP %1$d</string>
+    <string name="drop_sol">SOL</string>
+    <string name="drop_start">START (ms)</string>
+    <string name="drop_size">SIZE (ms)</string>
+    <string name="trigger_camera">Camera trigger</string>
+    <string name="trigger_flash">Flash trigger %1$d</string>
+
+    <!-- Presets -->
+    <string name="btn_preset_save">SAVE</string>
+    <string name="btn_preset_load">LOAD</string>
+    <string name="preset_save_title">Save preset</string>
+    <string name="preset_name_hint">Preset name</string>
+    <string name="preset_name_empty">Enter a name.</string>
+    <string name="preset_name_too_long">Name is too long (maximum: %1$d).</string>
+    <string name="preset_overwrite_title">Overwrite preset?</string>
+    <string name="preset_overwrite_message">A preset named \"%1$s\" already exists. Replace it with the current setup?</string>
+    <string name="preset_overwrite">Overwrite</string>
+    <string name="preset_saved">Preset \"%1$s\" saved.</string>
+    <string name="preset_name_duplicate">This name is already used.</string>
+    <string name="preset_delete_title">Delete preset?</string>
+    <string name="preset_delete_message">Delete \"%1$s\"?</string>
+    <string name="preset_delete">Delete</string>
+    <string name="preset_delete_description">Delete preset</string>
+    <string name="preset_deleted">Preset \"%1$s\" deleted.</string>
+    <string name="btn_presets_export">Export</string>
+    <string name="btn_presets_import">Import</string>
+    <string name="presets_export_file_name">dropcontroller-presets.json</string>
+    <string name="presets_export_done">Presets exported: %1$d.</string>
+    <string name="presets_export_failed">Cannot write the file.</string>
+    <string name="presets_import_done">Imported: %1$d, renamed: %2$d, skipped: %3$d.</string>
+    <string name="presets_import_failed">Cannot read the file.</string>
+    <string name="presets_import_invalid">This is not a valid dropController presets file.</string>
+    <string name="presets_import_too_large">The file is too large.</string>
+    <string name="graph_presets_title">Saved presets</string>
+    <string name="graph_presets_empty">No saved presets yet. Use SAVE on the Drops tab to store the current setup. Long press a name to rename it.</string>
+    <string name="preset_load_title">Load preset</string>
+    <string name="preset_load_empty">No saved presets yet. Use SAVE to store the current setup.</string>
+    <string name="preset_loaded">Preset \"%1$s\" loaded.</string>
+    <string name="preset_busy">A sequence is running.</string>
+    <string name="action_save">Save</string>
+    <string name="trigger_bulb">Bulb</string>
+    <string name="delta_inc">INC</string>
+    <string name="delta_dec">DEC</string>
+    <string name="hint_ms">ms</string>
+    <string name="hint_delta">delta</string>
+    <string name="sequence_timeout">The device did not report the end of the sequence.</string>
+
+    <!-- Drain tab -->
+    <string name="drain_hint">Open a valve to drain it. All valves are closed when you leave this tab.</string>
+    <string name="drain_valve">Valve %1$d</string>
+    <string name="drain_close_all">CLOSE ALL</string>
+
+    <!-- About tab -->
+    <string name="about_app_version">App version: %1$s</string>
+    <string name="about_firmware_unknown">Device firmware: not connected</string>
+    <string name="about_firmware_waiting">Device firmware: waiting for the device</string>
+    <string name="about_firmware">Device firmware: %1$s (%2$s)</string>
+    <string name="about_firmware_no_date">Device firmware: %1$s</string>
+
+    <!-- Graph tab -->
+    <string name="graph_axis_unit">ms</string>
+
+    <!-- Loop Page -->
+    <string name="loop_title">Loop Mode</string>
+    <string name="loop_sequence">SEQUENCE %1$d</string>
+    <string name="loop_drop_header">DROP %1$d   SOL %2$d   STOP %3$d</string>
+    <string name="loop_drop_values">START %1$d %2$s   SIZE %3$d %4$s</string>
+    <string name="loop_camera_off">Camera trigger: OFF</string>
+    <string name="loop_camera_bulb">Camera trigger: Bulb</string>
+    <string name="loop_camera_on">Camera trigger: %1$d %2$s</string>
+    <string name="loop_flash_off">Flash trigger %1$d: OFF</string>
+    <string name="loop_flash_on">Flash trigger %1$d: %2$d %3$s</string>
+    <string name="loop_status_idle">Stopped. Press START to continue.</string>
+    <string name="loop_status_active">Sequence %1$d is running.</string>
+    <string name="loop_status_countdown">Next sequence in %1$d s.</string>
+    <string name="loop_status_button">Press START for the next sequence.</string>
+    <string name="btn_stop">STOP</string>
+
+    <!-- Settings tab -->
+    <string name="settings_connection">Connection</string>
+    <string name="btn_not_connected">NOT-CONNECTED</string>
+    <string name="btn_connecting">CONNECTING</string>
+    <string name="btn_connected">CONNECTED</string>
+
+    <string name="settings_drops">Drops</string>
+    <string name="settings_num_drops">Number of drops</string>
+
+    <string name="settings_loop">Loop Mode</string>
+    <string name="settings_loop_mode">Loop Mode</string>
+    <string name="settings_delay_method">Delay method</string>
+    <string name="settings_delay_timer">TIMER</string>
+    <string name="settings_delay_button">BUTTON</string>
+    <string name="settings_wait_seconds">Wait time (s)</string>
+    <string name="settings_pulse_chip">%1$d ms</string>
+
+    <string name="settings_triggers">Triggers</string>
+    <string name="settings_camera_pulse">Camera trigger time (ms)</string>
+    <string name="settings_flash_pulse">Flash trigger time (ms)</string>
+    <string name="settings_triggers_enabled">Enabled triggers</string>
+    <string name="settings_pulse_time">Time (ms)</string>
+    <string name="settings_chip_camera">Camera trigger</string>
+    <string name="settings_chip_flash1">Flash trigger 1</string>
+    <string name="settings_chip_flash2">Flash trigger 2</string>
+    <string name="settings_chip_flash3">Flash trigger 3</string>
+    <string name="settings_chip_bulb">Camera Bulb mode</string>
+
+    <string name="settings_sounds">Sounds</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_system">SYSTEM</string>
+    <string name="settings_theme_light">LIGHT</string>
+    <string name="settings_theme_dark">DARK</string>
+    <string name="btn_reset">RESET</string>
+    <string name="reset_confirm_title">Reset everything?</string>
+    <string name="reset_confirm_message">All settings and drop data will be set back to their defaults. Saved presets and the Sounds and Theme settings are kept.</string>
+
+    <string name="bt_select_device">Select Bluetooth Device</string>
+    <string name="bt_cancel">Cancel</string>
+    <string name="bt_unknown_device">Unknown Device</string>
+    <string name="bt_no_paired_devices">No paired devices found. Pair the dropController in the Android Bluetooth settings.</string>
+    <string name="bt_not_enabled">Bluetooth is not enabled.</string>
+    <string name="bt_permission_missing">Bluetooth permission is not granted.</string>
+    <string name="bt_connection_failed">Connection failed.</string>
+    <string name="bt_connection_lost">Connection lost.</string>
+    <string name="bt_send_error">Error sending data.</string>
+    <string name="bt_not_connected">Not connected to a device.</string>
+
+    <string name="permissions_granted">Bluetooth permissions granted.</string>
+    <string name="permissions_denied">Bluetooth functionality is limited without permissions.</string>
 </resources>

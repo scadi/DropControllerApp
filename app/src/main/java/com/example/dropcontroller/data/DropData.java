@@ -1,59 +1,115 @@
 package com.example.dropcontroller.data;
 
-// This class will hold all the data for a single drop configuration (e.g., D1)
+import androidx.annotation.NonNull;
+
+import java.util.Objects;
+
+/**
+ * Data for a single drop: valve, START time and SIZE (valve open time), each time with a delta.
+ * All times are in milliseconds. The drop number is the position in {@link SequenceData}.
+ */
 public class DropData {
-    private int dropNumber; // e.g., 1 for D1, 2 for D2
-    private String solenoidFrequency; // Analogous to D1_SOL_HZ.Text
-    private String startTime;         // Analogous to D1_START_HZ.Text
-    private String sizeValue;         // Analogous to D1_SIZE_HZ.Text
-    private int sliderPosition;       // Value of the Slider component
 
-    // Constructor to initialize the data
-    public DropData(int dropNumber, String solenoidFrequency, String startTime, String sizeValue, int sliderPosition) {
-        this.dropNumber = dropNumber;
-        this.solenoidFrequency = solenoidFrequency;
-        this.startTime = startTime;
-        this.sizeValue = sizeValue;
-        this.sliderPosition = sliderPosition;
+    public static final int DEFAULT_SOLENOID = 1;
+    public static final int DEFAULT_START_MS = 100;
+    public static final int DEFAULT_SIZE_MS = 30;
+
+    private int solenoid = DEFAULT_SOLENOID;
+    private int startTime = DEFAULT_START_MS;
+    private final DeltaValue startDelta = new DeltaValue();
+    private int size = DEFAULT_SIZE_MS;
+    private final DeltaValue sizeDelta = new DeltaValue();
+
+    public int getSolenoid() {
+        return solenoid;
     }
 
-    // --- Getters (Methods to read the data) ---
-
-    public int getDropNumber() {
-        return dropNumber;
+    public void setSolenoid(int solenoid) {
+        this.solenoid = Limits.clamp(solenoid, Limits.MIN_SOLENOID, Limits.MAX_SOLENOID);
     }
 
-    public String getSolenoidFrequency() {
-        return solenoidFrequency;
-    }
-
-    public String getStartTime() {
+    public int getStartTime() {
         return startTime;
     }
 
-    public String getSizeValue() {
-        return sizeValue;
+    public void setStartTime(int startTime) {
+        this.startTime = Limits.clamp(startTime, Limits.MIN_TIME_MS, Limits.MAX_TIME_MS);
     }
 
-    public int getSliderPosition() {
-        return sliderPosition;
+    @NonNull
+    public DeltaValue getStartDelta() {
+        return startDelta;
     }
 
-    // --- Setters (Methods to change the data) ---
-
-    public void setSolenoidFrequency(String solenoidFrequency) {
-        this.solenoidFrequency = solenoidFrequency;
+    public int getSize() {
+        return size;
     }
 
-    public void setStartTime(String startTime) {
-        this.startTime = startTime;
+    public void setSize(int size) {
+        this.size = Limits.clamp(size, Limits.MIN_TIME_MS, Limits.MAX_TIME_MS);
     }
 
-    public void setSizeValue(String sizeValue) {
-        this.sizeValue = sizeValue;
+    @NonNull
+    public DeltaValue getSizeDelta() {
+        return sizeDelta;
     }
 
-    public void setSliderPosition(int sliderPosition) {
-        this.sliderPosition = sliderPosition;
+    /**
+     * STOP time shown on the Loop Page and sent to the device: START + SIZE.
+     */
+    public int getStopTime() {
+        return startTime + size;
+    }
+
+    /**
+     * Updates START and SIZE with their deltas (Loop Mode).
+     */
+    public void applyDeltas() {
+        startTime = startDelta.apply(startTime, Limits.MIN_TIME_MS, Limits.MAX_TIME_MS);
+        size = sizeDelta.apply(size, Limits.MIN_TIME_MS, Limits.MAX_TIME_MS);
+    }
+
+    public void resetToDefaults() {
+        solenoid = DEFAULT_SOLENOID;
+        startTime = DEFAULT_START_MS;
+        startDelta.copyFrom(new DeltaValue());
+        size = DEFAULT_SIZE_MS;
+        sizeDelta.copyFrom(new DeltaValue());
+    }
+
+    @NonNull
+    public DropData copy() {
+        DropData copy = new DropData();
+        copy.copyFrom(this);
+        return copy;
+    }
+
+    public void copyFrom(@NonNull DropData other) {
+        this.solenoid = other.solenoid;
+        this.startTime = other.startTime;
+        this.startDelta.copyFrom(other.startDelta);
+        this.size = other.size;
+        this.sizeDelta.copyFrom(other.sizeDelta);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof DropData)) {
+            return false;
+        }
+        DropData other = (DropData) o;
+        return solenoid == other.solenoid
+                && startTime == other.startTime
+                && startDelta.equals(other.startDelta)
+                && size == other.size
+                && sizeDelta.equals(other.sizeDelta);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(solenoid, startTime, startDelta, size, sizeDelta);
     }
 }

@@ -1,66 +1,137 @@
 package com.example.dropcontroller.fragments;
 
 import android.os.Bundle;
-
-import androidx.fragment.app.Fragment;
-
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+
+import com.example.dropcontroller.DropControllerApp;
 import com.example.dropcontroller.R;
+import com.example.dropcontroller.data.Limits;
+import com.example.dropcontroller.logic.ProtocolEncoder;
+import com.example.dropcontroller.services.BluetoothHelper;
+import com.google.android.material.materialswitch.MaterialSwitch;
 
 /**
- * A simple {@link Fragment} subclass.
- * Use the {@link DrainFragment#newInstance} factory method to
- * create an instance of this fragment.
+ * Drain tab: opens and closes a valve manually ([O&lt;v&gt;1] / [O&lt;v&gt;0]).
+ * <p>
+ * The valve state lives in the device, not in the app, so all valves are closed ([OX]) when the tab is left. That
+ * keeps the switches and the real valves in step after the fragment is recreated.
  */
 public class DrainFragment extends Fragment {
 
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
+    private BluetoothHelper bluetoothHelper;
+    private final MaterialSwitch[] valveSwitches = new MaterialSwitch[Limits.MAX_SOLENOID];
+    private Button closeAllButton;
 
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
+    // True while the switches are changed by the code, so the change listeners do not send anything
+    private boolean binding;
+
+    private final BluetoothHelper.Listener bluetoothListener = new BluetoothHelper.Listener() {
+        @Override
+        public void onStateChanged(@NonNull BluetoothHelper.State state) {
+            if (state != BluetoothHelper.State.CONNECTED) {
+                // The device closes nothing by itself, but the app can no longer control the valves
+                setAllSwitches(false);
+            }
+            updateEnabled();
+        }
+
+        @Override
+        public void onError(int messageResId) {
+            if (isAdded()) {
+                Toast.makeText(requireContext(), messageResId, Toast.LENGTH_LONG).show();
+            }
+        }
+    };
 
     public DrainFragment() {
         // Required empty public constructor
     }
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment DrainFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static DrainFragment newInstance(String param1, String param2) {
-        DrainFragment fragment = new DrainFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.fragment_drain, container, false);
+        bluetoothHelper = ((DropControllerApp) requireActivity().getApplication()).getBluetoothHelper();
+
+        LinearLayout valveList = view.findViewById(R.id.ll_valves);
+        for (int i = 0; i < Limits.MAX_SOLENOID; i++) {
+            final int valve = i + Limits.MIN_SOLENOID;
+            MaterialSwitch valveSwitch = new MaterialSwitch(requireContext());
+            valveSwitch.setLayoutParams(new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            valveSwitch.setMinHeight((int) (48 * getResources().getDisplayMetrics().density));
+            valveSwitch.setText(getString(R.string.drain_valve, valve));
+            valveSwitch.setOnCheckedChangeListener((button, checked) -> {
+                if (!binding) {
+                    onValveToggled(valve, checked);
+                }
+            });
+            valveList.addView(valveSwitch);
+            valveSwitches[i] = valveSwitch;
+        }
+
+        closeAllButton = view.findViewById(R.id.btn_close_all);
+        closeAllButton.setOnClickListener(v -> closeAll());
+        return view;
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
+    public void onStart() {
+        super.onStart();
+        bluetoothHelper.addListener(bluetoothListener);
+        setAllSwitches(false);
+        updateEnabled();
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        bluetoothHelper.removeListener(bluetoothListener);
+        if (bluetoothHelper.isConnected()) {
+            bluetoothHelper.send(ProtocolEncoder.allValvesClose());
         }
     }
 
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_drain, container, false);
+    private void onValveToggled(int valve, boolean open) {
+        String message = open ? ProtocolEncoder.valveOpen(valve) : ProtocolEncoder.valveClose(valve);
+        if (!bluetoothHelper.send(message)) {
+            // Not connected: the error was reported by the helper, put the switch back
+            setSwitch(valve - Limits.MIN_SOLENOID, !open);
+        }
+    }
+
+    private void closeAll() {
+        if (bluetoothHelper.send(ProtocolEncoder.allValvesClose())) {
+            setAllSwitches(false);
+        }
+    }
+
+    private void setSwitch(int index, boolean checked) {
+        binding = true;
+        valveSwitches[index].setChecked(checked);
+        binding = false;
+    }
+
+    private void setAllSwitches(boolean checked) {
+        for (int i = 0; i < valveSwitches.length; i++) {
+            setSwitch(i, checked);
+        }
+    }
+
+    private void updateEnabled() {
+        boolean connected = bluetoothHelper.isConnected();
+        for (MaterialSwitch valveSwitch : valveSwitches) {
+            valveSwitch.setEnabled(connected);
+        }
+        closeAllButton.setEnabled(connected);
     }
 }

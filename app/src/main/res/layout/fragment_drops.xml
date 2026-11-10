@@ -1,37 +1,121 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="8dp"
     tools:context=".fragments.DropsFragment">
 
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- One item_drop card per active drop, added by DropsFragment -->
+            <LinearLayout
+                android:id="@+id/ll_drops"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+            <!-- Camera and flash triggers -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_triggers"
+                style="@style/Widget.DropController.Card">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/settings_triggers"
+                        android:textAppearance="@style/TextAppearance.DropController.CardTitle" />
+
+                    <include
+                        android:id="@+id/row_camera"
+                        layout="@layout/view_value_delta" />
+
+                    <include
+                        android:id="@+id/row_flash1"
+                        layout="@layout/view_value_delta" />
+
+                    <include
+                        android:id="@+id/row_flash2"
+                        layout="@layout/view_value_delta" />
+
+                    <include
+                        android:id="@+id/row_flash3"
+                        layout="@layout/view_value_delta" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- One line: START (tinted by DropsFragment: grey / green / yellow) takes the free width,
+         the SAVE and LOAD icon buttons are as big as START (64dp, round). -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_margin="16dp"
         android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingBottom="8dp">
+        android:orientation="horizontal">
 
-        <TextView
-            android:id="@+id/tv_connection_status"
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_start"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="64dp"
             android:layout_weight="1"
-            android:text="Status: Disconnected"
-            android:textStyle="bold" />
+            android:text="@string/btn_start"
+            android:textAppearance="?attr/textAppearanceTitleLarge"
+            app:cornerRadius="32dp" />
 
-        <Button
-            android:id="@+id/btn_connect_bluetooth"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Connect" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_preset_save"
+            style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:layout_marginStart="8dp"
+            android:contentDescription="@string/btn_preset_save"
+            android:insetLeft="0dp"
+            android:insetRight="0dp"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:padding="0dp"
+            app:cornerRadius="32dp"
+            app:icon="@drawable/ic_preset_save_black_24dp"
+            app:iconGravity="textStart"
+            app:iconPadding="0dp"
+            app:iconSize="32dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_preset_load"
+            style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:layout_marginStart="8dp"
+            android:contentDescription="@string/btn_preset_load"
+            android:insetLeft="0dp"
+            android:insetRight="0dp"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:padding="0dp"
+            app:cornerRadius="32dp"
+            app:icon="@drawable/ic_preset_load_black_24dp"
+            app:iconGravity="textStart"
+            app:iconPadding="0dp"
+            app:iconSize="32dp" />
     </LinearLayout>
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rv_drop_configs"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
 
 </LinearLayout>

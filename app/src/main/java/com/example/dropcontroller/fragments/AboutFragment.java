@@ -1,66 +1,101 @@
 package com.example.dropcontroller.fragments;
 
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
-
-import androidx.fragment.app.Fragment;
-
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+
+import com.example.dropcontroller.DropControllerApp;
 import com.example.dropcontroller.R;
+import com.example.dropcontroller.services.BluetoothHelper;
+import com.example.dropcontroller.services.DeviceSession;
 
 /**
- * A simple {@link Fragment} subclass.
- * Use the {@link AboutFragment#newInstance} factory method to
- * create an instance of this fragment.
+ * About tab: the app version and, once connected, the firmware version reported by the device ([VERSION] reply).
  */
 public class AboutFragment extends Fragment {
 
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
+    private DeviceSession deviceSession;
+    private BluetoothHelper bluetoothHelper;
+    private TextView firmwareView;
 
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
+    private final DeviceSession.Listener sessionListener = (version, compileDate) -> updateFirmware();
+
+    private final BluetoothHelper.Listener bluetoothListener = new BluetoothHelper.Listener() {
+        @Override
+        public void onStateChanged(@NonNull BluetoothHelper.State state) {
+            updateFirmware();
+        }
+    };
 
     public AboutFragment() {
         // Required empty public constructor
     }
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment AboutFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static AboutFragment newInstance(String param1, String param2) {
-        AboutFragment fragment = new AboutFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.fragment_about, container, false);
+        DropControllerApp app = (DropControllerApp) requireActivity().getApplication();
+        deviceSession = app.getDeviceSession();
+        bluetoothHelper = app.getBluetoothHelper();
+
+        TextView appVersionView = view.findViewById(R.id.tv_app_version);
+        appVersionView.setText(getString(R.string.about_app_version, getAppVersion()));
+        firmwareView = view.findViewById(R.id.tv_firmware_version);
+        return view;
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
+    public void onStart() {
+        super.onStart();
+        deviceSession.addListener(sessionListener);
+        bluetoothHelper.addListener(bluetoothListener);
+        updateFirmware();
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        deviceSession.removeListener(sessionListener);
+        bluetoothHelper.removeListener(bluetoothListener);
+    }
+
+    private void updateFirmware() {
+        if (!isAdded()) {
+            return;
+        }
+        String version = deviceSession.getFirmwareVersion();
+        String date = deviceSession.getCompileDate();
+        if (version != null) {
+            if (date == null || date.isEmpty()) {
+                firmwareView.setText(getString(R.string.about_firmware_no_date, version));
+            } else {
+                firmwareView.setText(getString(R.string.about_firmware, version, date));
+            }
+        } else if (bluetoothHelper.isConnected()) {
+            firmwareView.setText(R.string.about_firmware_waiting);
+        } else {
+            firmwareView.setText(R.string.about_firmware_unknown);
         }
     }
 
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_about, container, false);
+    @NonNull
+    private String getAppVersion() {
+        try {
+            PackageInfo info = requireContext().getPackageManager()
+                    .getPackageInfo(requireContext().getPackageName(), 0);
+            return info.versionName != null ? info.versionName : "";
+        } catch (PackageManager.NameNotFoundException e) {
+            // Cannot happen for the own package; show an empty version
+            return "";
+        }
     }
 }

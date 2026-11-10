@@ -1,39 +1,82 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:padding="16dp"
+    android:fitsSystemWindows="true"
     tools:context=".MainActivity">
 
-    <Button
-        android:id="@+id/btn_splash_screen"
-        android:layout_width="wrap_content"
+    <!-- Splash screen -->
+    <LinearLayout
+        android:id="@+id/splash_container"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_centerInParent="true"
-        android:padding="20dp"
-        android:text="Start Drop Controller"
-        android:textSize="20sp" />
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:padding="32dp">
 
+        <ImageView
+            android:layout_width="96dp"
+            android:layout_height="96dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_drop_black_24dp"
+            app:tint="?attr/colorPrimary" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/splash_title"
+            android:textAppearance="?attr/textAppearanceHeadlineMedium"
+            android:textColor="?attr/colorOnSurface" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="32dp"
+            android:text="@string/splash_subtitle"
+            android:textAppearance="?attr/textAppearanceBodyLarge"
+            android:textColor="?attr/colorOnSurfaceVariant" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_splash_screen"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minHeight="56dp"
+            android:paddingHorizontal="32dp"
+            android:text="@string/splash_start"
+            android:textSize="18sp" />
+    </LinearLayout>
+
+    <!-- Main content: top app bar, current tab, bottom navigation -->
     <RelativeLayout
         android:id="@+id/main_content_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:visibility="gone">
 
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:background="@android:color/transparent"
+            app:title="@string/app_name" />
+
         <androidx.fragment.app.FragmentContainerView
             android:id="@+id/fragment_container"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_above="@+id/bottom_navigation" />
+            android:layout_above="@+id/bottom_navigation"
+            android:layout_below="@+id/toolbar" />
 
         <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/bottom_navigation"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentBottom="true"
-            android:background="?android:attr/windowBackground"
             app:menu="@menu/bottom_nav_menu" />
 
     </RelativeLayout>
