@@ -54,6 +54,7 @@ public class DropsFragment extends Fragment {
     private ValueDeltaRow cameraRow;
     private final ValueDeltaRow[] flashRows = new ValueDeltaRow[SequenceData.FLASH_COUNT];
     private MaterialSwitch bulbSwitch;
+    private View triggersCard;
     private Button startButton;
 
     // True while the views are filled from the model, so the change listeners do not write back
@@ -191,6 +192,8 @@ public class DropsFragment extends Fragment {
     }
 
     private void createTriggerRows(@NonNull View view, @NonNull SequenceData sequence) {
+        triggersCard = view.findViewById(R.id.card_triggers);
+
         CameraTrigger camera = sequence.getCamera();
         cameraRow = new ValueDeltaRow(view.findViewById(R.id.row_camera), camera.getDelta(),
                 camera::getTime, camera::setTime, app::saveSequence);
@@ -243,16 +246,23 @@ public class DropsFragment extends Fragment {
     }
 
     /**
-     * Disables the controls of a trigger that is OFF. In Bulb mode the camera time and delta are not used.
+     * Hides the controls of a trigger that is OFF in the Settings tab (and the whole card when all are OFF).
+     * In Bulb mode the camera time and delta are not used, so that row is disabled.
      */
     private void updateTriggerStates() {
         SequenceData sequence = app.getSequence();
         CameraTrigger camera = sequence.getCamera();
-        cameraRow.setEnabled(camera.isEnabled() && !camera.isBulb());
-        bulbSwitch.setEnabled(camera.isEnabled());
+        boolean anyVisible = camera.isEnabled();
+
+        cameraRow.setVisible(camera.isEnabled());
+        cameraRow.setEnabled(!camera.isBulb());
+        bulbSwitch.setVisibility(camera.isEnabled() ? View.VISIBLE : View.GONE);
         for (int i = 0; i < SequenceData.FLASH_COUNT; i++) {
-            flashRows[i].setEnabled(sequence.getFlash(i).isEnabled());
+            boolean enabled = sequence.getFlash(i).isEnabled();
+            flashRows[i].setVisible(enabled);
+            anyVisible |= enabled;
         }
+        triggersCard.setVisibility(anyVisible ? View.VISIBLE : View.GONE);
     }
 
     /**

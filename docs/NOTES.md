@@ -9,7 +9,8 @@ Mark an item `[x]` here when it has been dealt with, and say where.
 - [ ] Bulb mode: confirm the shutter close margin (+100 ms) and that the camera time/delta are ignored.
 - [ ] Message pacing of 30 ms: verify on a real HC-06 that nothing is dropped.
 - [ ] Graph shutter bar: confirm it matches the original app (`PROTOCOL.md`, decision 7).
-- [ ] Which events play sounds in the original app (needed for stage 6 "Sounds").
+- [x] Which events play sounds in the original app: still unknown. Sounds were added for events chosen with the
+      user (sequence start, sequence end, Loop Mode countdown end); see "Sounds" below.
 - [ ] Original behavior when the CONNECTED button is tapped while connected (the app currently disconnects).
 - [ ] Original behavior of the RESET button: does it ask for confirmation?
 
@@ -49,7 +50,8 @@ Mark an item `[x]` here when it has been dealt with, and say where.
 - [ ] The camera ON/OFF and Bulb split: ON/OFF lives in Settings (switch), Bulb lives on the Drops tab (switch).
       The original has one 3-state camera control (OFF / ON + time / ON + Bulb). Consider a single control on the
       Drops tab for parity.
-- [ ] Flash and camera controls on the Drops tab are shown even when OFF (greyed out), as in the original.
+- [x] Flash and camera controls on the Drops tab are hidden when the trigger is OFF (the original greys them out;
+      changed on the user's request, see `PLAN.md`, stage 3). The values stay in the model and are still sent.
 - [ ] In Bulb mode the camera time/delta row is disabled because they are not used (`PROTOCOL.md`, decision 3).
 - [ ] Sequence number sent in `[S<n>]` is always 1 in Single Sequence Mode; the Loop Page (stage 4) should pass its
       sequence counter.
@@ -88,6 +90,17 @@ Mark an item `[x]` here when it has been dealt with, and say where.
 - [ ] Drain closes all valves ([OX]) when the tab is left (`onStop`), so the switches match the device.
 - [ ] About shows `versionName` from the manifest (currently 1.0). The firmware requires app version 30401 or higher
       (`PROTOCOL.md`); the device does not check it over Bluetooth, so it is not enforced.
+
+## Sounds (stage 6)
+- [ ] Not tested on a device: tones, volume (`STREAM_MUSIC`, 80%) and how they sound need a manual check.
+- [ ] The tones are `ToneGenerator` beeps (start `TONE_PROP_BEEP`, end `TONE_PROP_ACK`, countdown end
+      `TONE_PROP_BEEP2`). Replace them with audio files if better sounds are wanted.
+- [ ] A start tone is skipped when another tone played less than 500 ms before (the countdown-end tone or the end tone
+      when the wait time is 0), because the new tone would cut the old one.
+- [ ] No sound for a timeout or a lost connection (only for [FTS] from the device).
+- [ ] The countdown-end tone also plays if the Loop Page is open but the screen is off, as long as the app runs.
+- [ ] `SoundPlayer` is not covered by JVM tests (Android audio classes); the events behind it are
+      (`LoopControllerTest`).
 
 ## Technical debt
 - [ ] `BluetoothHelper` uses `BluetoothDevice.getName()` through a permission check at every call; consider caching.

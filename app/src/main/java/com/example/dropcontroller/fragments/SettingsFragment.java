@@ -12,7 +12,6 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
-import android.widget.RadioGroup;
 import android.widget.Spinner;
 import android.widget.Toast;
 
@@ -27,6 +26,7 @@ import com.example.dropcontroller.data.Limits;
 import com.example.dropcontroller.data.LoopDelayMethod;
 import com.example.dropcontroller.data.SequenceData;
 import com.example.dropcontroller.services.BluetoothHelper;
+import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.materialswitch.MaterialSwitch;
 
 import java.util.ArrayList;
@@ -45,7 +45,7 @@ public class SettingsFragment extends Fragment {
     private Button connectButton;
     private Spinner numDropsSpinner;
     private MaterialSwitch loopModeSwitch;
-    private RadioGroup delayMethodGroup;
+    private MaterialButtonToggleGroup delayMethodGroup;
     private EditText waitSecondsField;
     private EditText cameraPulseField;
     private EditText flashPulseField;
@@ -85,7 +85,7 @@ public class SettingsFragment extends Fragment {
         connectButton = view.findViewById(R.id.btn_connect);
         numDropsSpinner = view.findViewById(R.id.sp_num_drops);
         loopModeSwitch = view.findViewById(R.id.sw_loop_mode);
-        delayMethodGroup = view.findViewById(R.id.rg_delay_method);
+        delayMethodGroup = view.findViewById(R.id.tg_delay_method);
         waitSecondsField = view.findViewById(R.id.et_wait_seconds);
         cameraPulseField = view.findViewById(R.id.et_camera_pulse);
         flashPulseField = view.findViewById(R.id.et_flash_pulse);
@@ -142,7 +142,7 @@ public class SettingsFragment extends Fragment {
         numDropsSpinner.setSelection(settings.getNumDrops() - Limits.MIN_DROPS);
         loopModeSwitch.setChecked(settings.isLoopModeOn());
         delayMethodGroup.check(settings.getDelayMethod() == LoopDelayMethod.TIMER
-                ? R.id.rb_delay_timer : R.id.rb_delay_button);
+                ? R.id.btn_delay_timer : R.id.btn_delay_button);
         waitSecondsField.setText(String.valueOf(settings.getWaitSeconds()));
         cameraPulseField.setText(String.valueOf(settings.getCameraPulseMs()));
         flashPulseField.setText(String.valueOf(settings.getFlashPulseMs()));
@@ -179,9 +179,9 @@ public class SettingsFragment extends Fragment {
             }
         });
 
-        delayMethodGroup.setOnCheckedChangeListener((group, checkedId) -> {
-            if (!binding) {
-                app.getSettings().setDelayMethod(checkedId == R.id.rb_delay_timer
+        delayMethodGroup.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
+            if (!binding && isChecked) {
+                app.getSettings().setDelayMethod(checkedId == R.id.btn_delay_timer
                         ? LoopDelayMethod.TIMER : LoopDelayMethod.BUTTON);
                 app.saveSettings();
             }

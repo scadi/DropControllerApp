@@ -1,10 +1,9 @@
 package com.example.dropcontroller;
 
-import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.view.ViewGroup;
+import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -81,6 +80,11 @@ public class LoopActivity extends AppCompatActivity {
         @Override
         public void onCountdown(int secondsRemaining) {
             updateStatus();
+        }
+
+        @Override
+        public void onCountdownFinished() {
+            app.getSoundPlayer().playCountdownEnd();
         }
 
         @Override
@@ -171,7 +175,7 @@ public class LoopActivity extends AppCompatActivity {
     // ----------------------------------------------------
 
     /**
-     * Shows the values of the next sequence: one block per drop, then CT and FT1-FT3.
+     * Shows the values of the next sequence: one card per drop, then one card with CT and FT1-FT3.
      */
     private void render() {
         AppSettings settings = app.getSettings();
@@ -182,43 +186,40 @@ public class LoopActivity extends AppCompatActivity {
         linesLayout.removeAllViews();
         for (int i = 0; i < settings.getNumDrops(); i++) {
             DropData drop = data.getDrop(i);
-            addLine(getString(R.string.loop_drop_header, i + 1, drop.getSolenoid(), drop.getStopTime()), true);
-            addLine(getString(R.string.loop_drop_values,
-                    drop.getStartTime(), DeltaFormat.format(drop.getStartDelta()),
-                    drop.getSize(), DeltaFormat.format(drop.getSizeDelta())), false);
+            addCard(getString(R.string.loop_drop_header, i + 1, drop.getSolenoid(), drop.getStopTime()),
+                    getString(R.string.loop_drop_values,
+                            drop.getStartTime(), DeltaFormat.format(drop.getStartDelta()),
+                            drop.getSize(), DeltaFormat.format(drop.getSizeDelta())));
         }
 
+        StringBuilder triggers = new StringBuilder();
         CameraTrigger camera = data.getCamera();
         if (!camera.isEnabled()) {
-            addLine(getString(R.string.loop_camera_off), true);
+            triggers.append(getString(R.string.loop_camera_off));
         } else if (camera.isBulb()) {
-            addLine(getString(R.string.loop_camera_bulb), true);
+            triggers.append(getString(R.string.loop_camera_bulb));
         } else {
-            addLine(getString(R.string.loop_camera_on, camera.getTime(), DeltaFormat.format(camera.getDelta())), true);
+            triggers.append(getString(R.string.loop_camera_on, camera.getTime(), DeltaFormat.format(camera.getDelta())));
         }
 
         for (int i = 0; i < SequenceData.FLASH_COUNT; i++) {
             FlashTrigger flash = data.getFlash(i);
+            triggers.append('\n');
             if (flash.isEnabled()) {
-                addLine(getString(R.string.loop_flash_on, i + 1, flash.getTime(),
-                        DeltaFormat.format(flash.getDelta())), true);
+                triggers.append(getString(R.string.loop_flash_on, i + 1, flash.getTime(),
+                        DeltaFormat.format(flash.getDelta())));
             } else {
-                addLine(getString(R.string.loop_flash_off, i + 1), true);
+                triggers.append(getString(R.string.loop_flash_off, i + 1));
             }
         }
+        addCard(getString(R.string.settings_triggers), triggers.toString());
     }
 
-    private void addLine(@NonNull String text, boolean bold) {
-        TextView line = new TextView(this);
-        line.setLayoutParams(new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        line.setText(text);
-        line.setTextSize(16);
-        if (bold) {
-            line.setPadding(0, (int) (8 * getResources().getDisplayMetrics().density), 0, 0);
-            line.setTypeface(line.getTypeface(), Typeface.BOLD);
-        }
-        linesLayout.addView(line);
+    private void addCard(@NonNull String title, @NonNull String body) {
+        View card = getLayoutInflater().inflate(R.layout.item_loop_card, linesLayout, false);
+        ((TextView) card.findViewById(R.id.tv_card_title)).setText(title);
+        ((TextView) card.findViewById(R.id.tv_card_body)).setText(body);
+        linesLayout.addView(card);
     }
 
     private void updateStatus() {

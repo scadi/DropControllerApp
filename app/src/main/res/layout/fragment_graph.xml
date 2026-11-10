@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:clipToPadding="false"
     tools:context=".fragments.GraphFragment">
 
     <LinearLayout
@@ -11,16 +12,12 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:text="@string/graph_title"
-            android:textSize="24sp" />
+        <com.google.android.material.card.MaterialCardView style="@style/Widget.DropController.Card">
 
-        <com.example.dropcontroller.views.GraphCanvasView
-            android:id="@+id/graph_canvas"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            <com.example.dropcontroller.views.GraphCanvasView
+                android:id="@+id/graph_canvas"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+        </com.google.android.material.card.MaterialCardView>
     </LinearLayout>
 </ScrollView>

@@ -11,6 +11,7 @@ import com.example.dropcontroller.data.SequenceData;
 import com.example.dropcontroller.services.BluetoothHelper;
 import com.example.dropcontroller.services.DeviceSession;
 import com.example.dropcontroller.services.SequenceRunner;
+import com.example.dropcontroller.services.SoundPlayer;
 
 /**
  * Holds the state that outlives fragments and activities: settings, drop data and the Bluetooth connection.
@@ -25,7 +26,7 @@ public class DropControllerApp extends Application {
     private BluetoothHelper bluetoothHelper;
     private SequenceRunner sequenceRunner;
     private DeviceSession deviceSession;
-
+    private SoundPlayer soundPlayer;
     @Override
     public void onCreate() {
         super.onCreate();
@@ -35,6 +36,7 @@ public class DropControllerApp extends Application {
         bluetoothHelper = new BluetoothHelper(this);
         sequenceRunner = new SequenceRunner(bluetoothHelper, settings, sequence);
         deviceSession = new DeviceSession(bluetoothHelper);
+        soundPlayer = new SoundPlayer(settings, sequenceRunner);
     }
 
     @NonNull
@@ -60,6 +62,11 @@ public class DropControllerApp extends Application {
     @NonNull
     public DeviceSession getDeviceSession() {
         return deviceSession;
+    }
+
+    @NonNull
+    public SoundPlayer getSoundPlayer() {
+        return soundPlayer;
     }
 
     public void saveSettings() {

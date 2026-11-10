@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:clipToPadding="false"
     tools:context=".fragments.SettingsFragment">
 
     <LinearLayout
@@ -11,171 +13,254 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:text="@string/settings_title"
-            android:textSize="24sp" />
-
         <!-- Connection -->
-        <TextView
-            style="@style/SettingsSectionTitle"
-            android:text="@string/settings_connection" />
+        <com.google.android.material.card.MaterialCardView style="@style/Widget.DropController.Card">
 
-        <Button
-            android:id="@+id/btn_connect"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/btn_not_connected" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:text="@string/settings_connection"
+                    android:textAppearance="@style/TextAppearance.DropController.CardTitle" />
+
+                <Button
+                    android:id="@+id/btn_connect"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:text="@string/btn_not_connected" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- Drops -->
-        <TextView
-            style="@style/SettingsSectionTitle"
-            android:text="@string/settings_drops" />
+        <com.google.android.material.card.MaterialCardView style="@style/Widget.DropController.Card">
 
-        <LinearLayout style="@style/SettingsRow">
-
-            <TextView
-                style="@style/SettingsRowLabel"
-                android:text="@string/settings_num_drops" />
-
-            <Spinner
-                android:id="@+id/sp_num_drops"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:minHeight="48dp" />
-        </LinearLayout>
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/settings_drops"
+                    android:textAppearance="@style/TextAppearance.DropController.CardTitle" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:labelFor="@+id/sp_num_drops"
+                        android:text="@string/settings_num_drops"
+                        android:textAppearance="?attr/textAppearanceBodyLarge" />
+
+                    <Spinner
+                        android:id="@+id/sp_num_drops"
+                        android:layout_width="wrap_content"
+                        android:layout_height="48dp"
+                        android:background="@drawable/bg_dropdown"
+                        android:minWidth="72dp"
+                        android:paddingHorizontal="8dp" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- Loop Mode -->
-        <TextView
-            style="@style/SettingsSectionTitle"
-            android:text="@string/settings_loop" />
+        <com.google.android.material.card.MaterialCardView style="@style/Widget.DropController.Card">
 
-        <com.google.android.material.materialswitch.MaterialSwitch
-            android:id="@+id/sw_loop_mode"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="48dp"
-            android:text="@string/settings_loop_mode" />
-
-        <LinearLayout style="@style/SettingsRow">
-
-            <TextView
-                style="@style/SettingsRowLabel"
-                android:text="@string/settings_delay_method" />
-
-            <RadioGroup
-                android:id="@+id/rg_delay_method"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                android:orientation="vertical"
+                android:padding="16dp">
 
-                <RadioButton
-                    android:id="@+id/rb_delay_timer"
-                    android:layout_width="wrap_content"
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/settings_loop"
+                    android:textAppearance="@style/TextAppearance.DropController.CardTitle" />
+
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/sw_loop_mode"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:minHeight="48dp"
-                    android:text="@string/settings_delay_timer" />
+                    android:text="@string/settings_loop_mode" />
 
-                <RadioButton
-                    android:id="@+id/rb_delay_button"
-                    android:layout_width="wrap_content"
+                <TextView
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:minHeight="48dp"
-                    android:text="@string/settings_delay_button" />
-            </RadioGroup>
-        </LinearLayout>
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="4dp"
+                    android:text="@string/settings_delay_method"
+                    android:textAppearance="?attr/textAppearanceLabelLarge"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
 
-        <LinearLayout style="@style/SettingsRow">
+                <!-- TIMER / BUTTON as a segmented button; exactly one segment is always selected -->
+                <com.google.android.material.button.MaterialButtonToggleGroup
+                    android:id="@+id/tg_delay_method"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:selectionRequired="true"
+                    app:singleSelection="true">
 
-            <TextView
-                style="@style/SettingsRowLabel"
-                android:labelFor="@+id/et_wait_seconds"
-                android:text="@string/settings_wait_seconds" />
+                    <Button
+                        android:id="@+id/btn_delay_timer"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/settings_delay_timer" />
 
-            <EditText
-                android:id="@+id/et_wait_seconds"
-                style="@style/SettingsNumberField"
-                android:importantForAutofill="no" />
-        </LinearLayout>
+                    <Button
+                        android:id="@+id/btn_delay_button"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/settings_delay_button" />
+                </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:hint="@string/settings_wait_seconds">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/et_wait_seconds"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:imeOptions="actionDone"
+                        android:importantForAutofill="no"
+                        android:inputType="number"
+                        android:maxLength="3" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- Triggers -->
-        <TextView
-            style="@style/SettingsSectionTitle"
-            android:text="@string/settings_triggers" />
+        <com.google.android.material.card.MaterialCardView style="@style/Widget.DropController.Card">
 
-        <LinearLayout style="@style/SettingsRow">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
 
-            <TextView
-                style="@style/SettingsRowLabel"
-                android:labelFor="@+id/et_camera_pulse"
-                android:text="@string/settings_camera_pulse" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/settings_triggers"
+                    android:textAppearance="@style/TextAppearance.DropController.CardTitle" />
 
-            <EditText
-                android:id="@+id/et_camera_pulse"
-                style="@style/SettingsNumberField"
-                android:importantForAutofill="no" />
-        </LinearLayout>
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:hint="@string/settings_camera_pulse">
 
-        <LinearLayout style="@style/SettingsRow">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/et_camera_pulse"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:imeOptions="actionDone"
+                        android:importantForAutofill="no"
+                        android:inputType="number"
+                        android:maxLength="3" />
+                </com.google.android.material.textfield.TextInputLayout>
 
-            <TextView
-                style="@style/SettingsRowLabel"
-                android:labelFor="@+id/et_flash_pulse"
-                android:text="@string/settings_flash_pulse" />
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:hint="@string/settings_flash_pulse">
 
-            <EditText
-                android:id="@+id/et_flash_pulse"
-                style="@style/SettingsNumberField"
-                android:importantForAutofill="no" />
-        </LinearLayout>
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/et_flash_pulse"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:imeOptions="actionDone"
+                        android:importantForAutofill="no"
+                        android:inputType="number"
+                        android:maxLength="3" />
+                </com.google.android.material.textfield.TextInputLayout>
 
-        <com.google.android.material.materialswitch.MaterialSwitch
-            android:id="@+id/sw_camera"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="48dp"
-            android:text="@string/settings_camera_enabled" />
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/sw_camera"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:minHeight="48dp"
+                    android:text="@string/settings_camera_enabled" />
 
-        <com.google.android.material.materialswitch.MaterialSwitch
-            android:id="@+id/sw_flash1"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="48dp"
-            android:text="@string/settings_flash1_enabled" />
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/sw_flash1"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp"
+                    android:text="@string/settings_flash1_enabled" />
 
-        <com.google.android.material.materialswitch.MaterialSwitch
-            android:id="@+id/sw_flash2"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="48dp"
-            android:text="@string/settings_flash2_enabled" />
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/sw_flash2"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp"
+                    android:text="@string/settings_flash2_enabled" />
 
-        <com.google.android.material.materialswitch.MaterialSwitch
-            android:id="@+id/sw_flash3"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="48dp"
-            android:text="@string/settings_flash3_enabled" />
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/sw_flash3"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp"
+                    android:text="@string/settings_flash3_enabled" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- Sounds and reset -->
-        <TextView
-            style="@style/SettingsSectionTitle"
-            android:text="@string/settings_sounds" />
+        <com.google.android.material.card.MaterialCardView style="@style/Widget.DropController.Card">
 
-        <com.google.android.material.materialswitch.MaterialSwitch
-            android:id="@+id/sw_sounds"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:minHeight="48dp"
-            android:text="@string/settings_sounds" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
 
-        <Button
-            android:id="@+id/btn_reset"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="@string/btn_reset" />
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/sw_sounds"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp"
+                    android:text="@string/settings_sounds" />
+
+                <!-- RESET erases all drop data, so it is outlined in the error color -->
+                <Button
+                    android:id="@+id/btn_reset"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:layout_marginTop="16dp"
+                    android:text="@string/btn_reset"
+                    android:textColor="?attr/colorError"
+                    app:strokeColor="?attr/colorError" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
     </LinearLayout>
 </ScrollView>

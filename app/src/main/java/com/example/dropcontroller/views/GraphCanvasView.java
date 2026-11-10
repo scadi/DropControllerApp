@@ -11,9 +11,11 @@ import android.view.View;
 import androidx.annotation.ColorInt;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 
 import com.example.dropcontroller.R;
 import com.example.dropcontroller.logic.GraphModel;
+import com.google.android.material.color.MaterialColors;
 
 import java.util.List;
 
@@ -22,10 +24,6 @@ import java.util.List;
  * shutter on a common millisecond axis. The view sizes its height from the number of bars.
  */
 public class GraphCanvasView extends View {
-
-    private static final int DROP_COLOR = Color.parseColor("#1E88E5");
-    private static final int FLASH_COLOR = Color.parseColor("#F9A825");
-    private static final int CAMERA_COLOR = Color.parseColor("#2E7D32");
 
     private static final float ROW_HEIGHT_DP = 32f;
     private static final float BAR_HEIGHT_DP = 18f;
@@ -43,6 +41,13 @@ public class GraphCanvasView extends View {
     private float density;
     private GraphModel model;
 
+    @ColorInt
+    private int dropColor;
+    @ColorInt
+    private int flashColor;
+    @ColorInt
+    private int cameraColor;
+
     public GraphCanvasView(Context context) {
         super(context);
         init();
@@ -55,27 +60,27 @@ public class GraphCanvasView extends View {
 
     private void init() {
         density = getResources().getDisplayMetrics().density;
-        @ColorInt int textColor = resolveTextColor();
+        // Series colors come from res/values(-night)/colors.xml, the rest from the theme (light and dark)
+        dropColor = ContextCompat.getColor(getContext(), R.color.graph_drop);
+        flashColor = ContextCompat.getColor(getContext(), R.color.graph_flash);
+        cameraColor = ContextCompat.getColor(getContext(), R.color.graph_camera);
 
-        axisPaint.setColor(textColor);
+        @ColorInt int axisColor = MaterialColors.getColor(this, com.google.android.material.R.attr.colorOnSurfaceVariant,
+                Color.DKGRAY);
+        @ColorInt int textColor = MaterialColors.getColor(this, com.google.android.material.R.attr.colorOnSurface,
+                Color.DKGRAY);
+        @ColorInt int gridColor = MaterialColors.getColor(this, com.google.android.material.R.attr.colorOutlineVariant,
+                Color.LTGRAY);
+
+        axisPaint.setColor(axisColor);
         axisPaint.setStrokeWidth(Math.max(1f, density));
 
-        gridPaint.setColor(Color.argb(60, Color.red(textColor), Color.green(textColor), Color.blue(textColor)));
+        gridPaint.setColor(gridColor);
         gridPaint.setStrokeWidth(1f);
 
         textPaint.setColor(textColor);
         textPaint.setTextSize(TypedValue.applyDimension(
                 TypedValue.COMPLEX_UNIT_SP, TEXT_SIZE_SP, getResources().getDisplayMetrics()));
-    }
-
-    @ColorInt
-    private int resolveTextColor() {
-        TypedValue value = new TypedValue();
-        if (getContext().getTheme().resolveAttribute(android.R.attr.textColorPrimary, value, true)
-                && value.type >= TypedValue.TYPE_FIRST_COLOR_INT && value.type <= TypedValue.TYPE_LAST_COLOR_INT) {
-            return value.data;
-        }
-        return Color.DKGRAY;
     }
 
     /** Sets the data to draw and redraws. */
@@ -156,14 +161,14 @@ public class GraphCanvasView extends View {
     }
 
     @ColorInt
-    private static int colorFor(@NonNull GraphModel.Bar bar) {
+    private int colorFor(@NonNull GraphModel.Bar bar) {
         switch (bar.getType()) {
             case DROP:
-                return DROP_COLOR;
+                return dropColor;
             case FLASH:
-                return FLASH_COLOR;
+                return flashColor;
             default:
-                return CAMERA_COLOR;
+                return cameraColor;
         }
     }
 }

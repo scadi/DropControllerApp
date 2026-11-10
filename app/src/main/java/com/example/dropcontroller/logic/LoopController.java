@@ -39,6 +39,12 @@ public class LoopController {
 
         void onCountdown(int secondsRemaining);
 
+        /**
+         * The countdown reached zero. Called just before {@link #onSendSequence} of the next sequence.
+         */
+        default void onCountdownFinished() {
+        }
+
         /** The values or the sequence number changed (after deltas were applied or after a reset). */
         void onDataChanged(int sequenceNumber, @NonNull SequenceData data);
     }
@@ -159,6 +165,7 @@ public class LoopController {
         secondsRemaining--;
         if (secondsRemaining <= 0) {
             secondsRemaining = 0;
+            listener.onCountdownFinished();
             beginSequence();
         } else {
             listener.onCountdown(secondsRemaining);

@@ -2,8 +2,14 @@
 <resources>
     <string name="app_name">DropControllerApp</string>
 
-    <string name="settings_title">Settings</string>
     <string name="splash_start">Start Drop Controller</string>
+    <string name="splash_title">dropController</string>
+    <string name="splash_subtitle">Water drop photography</string>
+
+    <!-- Top app bar connection indicator -->
+    <string name="status_not_connected">Not connected</string>
+    <string name="status_connecting">Connecting…</string>
+    <string name="status_connected">Connected</string>
 
     <!-- Bottom navigation -->
     <string name="nav_drops">Drops</string>
@@ -29,13 +35,11 @@
     <string name="sequence_timeout">The device did not report the end of the sequence.</string>
 
     <!-- Drain tab -->
-    <string name="drain_title">Drain</string>
     <string name="drain_hint">Open a valve to drain it. All valves are closed when you leave this tab.</string>
     <string name="drain_valve">Valve %1$d</string>
     <string name="drain_close_all">CLOSE ALL</string>
 
     <!-- About tab -->
-    <string name="about_title">About</string>
     <string name="about_app_version">App version: %1$s</string>
     <string name="about_firmware_unknown">Device firmware: not connected</string>
     <string name="about_firmware_waiting">Device firmware: waiting for the device</string>
@@ -43,12 +47,10 @@
     <string name="about_firmware_no_date">Device firmware: %1$s</string>
 
     <!-- Graph tab -->
-    <string name="graph_title">Graph</string>
     <string name="graph_axis_unit">ms</string>
     <string name="graph_label_drop">D%1$d</string>
     <string name="graph_label_flash">FT%1$d</string>
     <string name="graph_label_camera">CT</string>
-    <string name="graph_empty">Nothing to show.</string>
 
     <!-- Loop Page -->
     <string name="loop_title">Loop Mode</string>

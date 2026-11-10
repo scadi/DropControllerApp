@@ -34,6 +34,13 @@ public class SequenceRunner {
         void onActiveChanged(boolean active);
 
         /**
+         * The device reported the end of the sequence ([FTS]). Not called for a timeout, a lost connection or
+         * {@link #abort()}. Called before {@link #onFinished}.
+         */
+        default void onDeviceFinished() {
+        }
+
+        /**
          * The sequence is over.
          *
          * @param timedOut true if [FTS] never arrived and the timeout ended the sequence
@@ -63,6 +70,9 @@ public class SequenceRunner {
         @Override
         public void onMessageReceived(@NonNull DeviceMessage message) {
             if (message.getType() == DeviceMessage.Type.FINISHED && active) {
+                for (Listener listener : listeners) {
+                    listener.onDeviceFinished();
+                }
                 finish(false);
             }
         }

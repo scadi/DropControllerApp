@@ -2,6 +2,7 @@ package com.example.dropcontroller;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.Spannable;
@@ -17,6 +18,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.fragment.app.Fragment;
 
 import com.example.dropcontroller.fragments.AboutFragment;
@@ -25,7 +27,9 @@ import com.example.dropcontroller.fragments.DropsFragment;
 import com.example.dropcontroller.fragments.GraphFragment;
 import com.example.dropcontroller.fragments.SettingsFragment;
 import com.example.dropcontroller.services.BluetoothHelper;
+import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.color.MaterialColors;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,8 +37,10 @@ import java.util.List;
 // Handles tab selection through BottomNavigationView.OnNavigationItemSelectedListener
 public class MainActivity extends AppCompatActivity implements BottomNavigationView.OnNavigationItemSelectedListener {
 
+    private View splashContainer;
     private Button splashButton;
     private RelativeLayout mainContentContainer;
+    private MaterialToolbar toolbar;
     private BottomNavigationView bottomNavigationView;
     private static final String STATE_MAIN_SHOWN = "main_shown";
     private final int REQUEST_BLUETOOTH_PERMISSIONS = 100; // Constant request code
@@ -44,6 +50,7 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         @Override
         public void onStateChanged(@NonNull BluetoothHelper.State state) {
             updateSettingsTabLabel();
+            updateConnectionIndicator();
         }
     };
 
@@ -53,10 +60,14 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         setContentView(R.layout.activity_main);
 
         // 1. Initialization of views
+        splashContainer = findViewById(R.id.splash_container);
         splashButton = findViewById(R.id.btn_splash_screen);
         mainContentContainer = findViewById(R.id.main_content_container);
+        toolbar = findViewById(R.id.toolbar);
         bottomNavigationView = findViewById(R.id.bottom_navigation);
         bluetoothHelper = ((DropControllerApp) getApplication()).getBluetoothHelper();
+
+        toolbar.inflateMenu(R.menu.top_app_bar_menu);
 
 
         // 2. Splash screen button click listener
@@ -86,9 +97,58 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
 
     // Hides the splash screen and enables the tab navigation
     private void showMainContent() {
-        splashButton.setVisibility(View.GONE);
+        splashContainer.setVisibility(View.GONE);
         mainContentContainer.setVisibility(View.VISIBLE);
         bottomNavigationView.setOnNavigationItemSelectedListener(this);
+        updateToolbarTitle(bottomNavigationView.getSelectedItemId());
+    }
+
+    // The top app bar shows the name of the current tab
+    private void updateToolbarTitle(int navItemId) {
+        int titleRes;
+        if (navItemId == R.id.nav_settings) {
+            titleRes = R.string.nav_settings;
+        } else if (navItemId == R.id.nav_graph) {
+            titleRes = R.string.nav_graph;
+        } else if (navItemId == R.id.nav_drain) {
+            titleRes = R.string.nav_drain;
+        } else if (navItemId == R.id.nav_about) {
+            titleRes = R.string.nav_about;
+        } else {
+            titleRes = R.string.nav_drops;
+        }
+        toolbar.setTitle(titleRes);
+    }
+
+    // Shows the Bluetooth state in the top app bar: icon tint, tooltip and subtitle
+    private void updateConnectionIndicator() {
+        MenuItem item = toolbar.getMenu().findItem(R.id.action_connection);
+        int statusRes;
+        int colorAttr;
+        switch (bluetoothHelper.getState()) {
+            case CONNECTED:
+                statusRes = R.string.status_connected;
+                colorAttr = androidx.appcompat.R.attr.colorPrimary;
+                break;
+            case CONNECTING:
+                statusRes = R.string.status_connecting;
+                colorAttr = com.google.android.material.R.attr.colorTertiary;
+                break;
+            default:
+                statusRes = R.string.status_not_connected;
+                colorAttr = com.google.android.material.R.attr.colorOutline;
+                break;
+        }
+        toolbar.setSubtitle(statusRes);
+        if (item != null) {
+            item.setTitle(statusRes);
+            Drawable icon = item.getIcon();
+            if (icon != null) {
+                icon = DrawableCompat.wrap(icon.mutate());
+                DrawableCompat.setTint(icon, MaterialColors.getColor(toolbar, colorAttr));
+                item.setIcon(icon);
+            }
+        }
     }
 
     @Override
@@ -96,6 +156,7 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
         super.onStart();
         bluetoothHelper.addListener(bluetoothListener);
         updateSettingsTabLabel();
+        updateConnectionIndicator();
     }
 
     @Override
@@ -161,7 +222,11 @@ public class MainActivity extends AppCompatActivity implements BottomNavigationV
             fragment = new AboutFragment();
         }
 
-        return loadFragment(fragment);
+        boolean loaded = loadFragment(fragment);
+        if (loaded) {
+            updateToolbarTitle(itemId);
+        }
+        return loaded;
     }
 
     // New method to handle permission requests

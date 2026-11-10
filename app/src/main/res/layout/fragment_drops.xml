@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -9,7 +10,8 @@
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:clipToPadding="false">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -17,47 +19,65 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- One item_drop per active drop, added by DropsFragment -->
+            <!-- One item_drop card per active drop, added by DropsFragment -->
             <LinearLayout
                 android:id="@+id/ll_drops"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical" />
 
-            <TextView
-                style="@style/SettingsSectionTitle"
-                android:text="@string/settings_triggers" />
+            <!-- Camera and flash triggers -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_triggers"
+                style="@style/Widget.DropController.Card">
 
-            <include
-                android:id="@+id/row_camera"
-                layout="@layout/view_value_delta" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
-            <com.google.android.material.materialswitch.MaterialSwitch
-                android:id="@+id/sw_bulb"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:minHeight="48dp"
-                android:text="@string/trigger_bulb" />
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/settings_triggers"
+                        android:textAppearance="@style/TextAppearance.DropController.CardTitle" />
 
-            <include
-                android:id="@+id/row_flash1"
-                layout="@layout/view_value_delta" />
+                    <include
+                        android:id="@+id/row_camera"
+                        layout="@layout/view_value_delta" />
 
-            <include
-                android:id="@+id/row_flash2"
-                layout="@layout/view_value_delta" />
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/sw_bulb"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="48dp"
+                        android:text="@string/trigger_bulb" />
 
-            <include
-                android:id="@+id/row_flash3"
-                layout="@layout/view_value_delta" />
+                    <include
+                        android:id="@+id/row_flash1"
+                        layout="@layout/view_value_delta" />
+
+                    <include
+                        android:id="@+id/row_flash2"
+                        layout="@layout/view_value_delta" />
+
+                    <include
+                        android:id="@+id/row_flash3"
+                        layout="@layout/view_value_delta" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
     </ScrollView>
 
-    <Button
+    <!-- START: tinted by DropsFragment (grey / green / yellow) -->
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_start"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="64dp"
         android:layout_margin="16dp"
-        android:text="@string/btn_start" />
+        android:text="@string/btn_start"
+        android:textAppearance="?attr/textAppearanceTitleLarge"
+        app:cornerRadius="32dp" />
 
 </LinearLayout>

@@ -2,7 +2,6 @@ package com.example.dropcontroller.views;
 
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
@@ -13,25 +12,33 @@ import com.example.dropcontroller.R;
 import com.example.dropcontroller.data.DeltaDirection;
 import com.example.dropcontroller.data.DeltaValue;
 import com.example.dropcontroller.data.Limits;
+import com.google.android.material.button.MaterialButtonToggleGroup;
+import com.google.android.material.textfield.TextInputLayout;
 
 import java.util.function.IntConsumer;
 import java.util.function.IntSupplier;
 
 /**
- * Binds a {@code view_value_delta} row (label, value, INC/DEC button, delta) to a model value and its
+ * Binds a {@code view_value_delta} row (label, value, INC/DEC segmented button, delta) to a model value and its
  * {@link DeltaValue}. Number fields are committed when they lose focus or Done is pressed; the model setter clamps
  * the value and the clamped value is shown back. Empty input keeps the previous value.
  */
 public class ValueDeltaRow {
 
+    private final View root;
     private final EditText valueField;
-    private final Button directionButton;
+    private final MaterialButtonToggleGroup directionGroup;
     private final EditText deltaField;
+    private final TextInputLayout valueLayout;
+    private final TextInputLayout deltaLayout;
     private final TextView label;
     private final DeltaValue delta;
     private final IntSupplier getter;
     private final IntConsumer setter;
     private final Runnable onChanged;
+
+    // True while the toggle group is changed by the code, so its listener does not write back
+    private boolean binding;
 
     /**
      * @param root      the inflated {@code view_value_delta} layout (or the {@code <include>} that replaced it)
@@ -41,9 +48,12 @@ public class ValueDeltaRow {
      */
     public ValueDeltaRow(@NonNull View root, @NonNull DeltaValue delta, @NonNull IntSupplier getter,
                          @NonNull IntConsumer setter, @NonNull Runnable onChanged) {
+        this.root = root;
         this.label = root.findViewById(R.id.tv_label);
+        this.valueLayout = root.findViewById(R.id.til_value);
         this.valueField = root.findViewById(R.id.et_value);
-        this.directionButton = root.findViewById(R.id.btn_direction);
+        this.directionGroup = root.findViewById(R.id.tg_direction);
+        this.deltaLayout = root.findViewById(R.id.til_delta);
         this.deltaField = root.findViewById(R.id.et_delta);
         this.delta = delta;
         this.getter = getter;
@@ -53,14 +63,20 @@ public class ValueDeltaRow {
         // Several rows share the same child ids, so their saved state would overwrite each other
         valueField.setSaveEnabled(false);
         deltaField.setSaveEnabled(false);
-        directionButton.setSaveEnabled(false);
+        valueLayout.setSaveEnabled(false);
+        deltaLayout.setSaveEnabled(false);
+        directionGroup.setSaveEnabled(false);
+        root.findViewById(R.id.btn_inc).setSaveEnabled(false);
+        root.findViewById(R.id.btn_dec).setSaveEnabled(false);
 
         setupNumberField(valueField);
         setupNumberField(deltaField);
-        directionButton.setOnClickListener(v -> {
+        directionGroup.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
+            if (binding || !isChecked) {
+                return;
+            }
             commit();
-            delta.setDirection(delta.getDirection() == DeltaDirection.INC ? DeltaDirection.DEC : DeltaDirection.INC);
-            updateDirectionButton();
+            delta.setDirection(checkedId == R.id.btn_inc ? DeltaDirection.INC : DeltaDirection.DEC);
             onChanged.run();
         });
     }
@@ -78,10 +94,22 @@ public class ValueDeltaRow {
         updateDirectionButton();
     }
 
+    /**
+     * Shows or hides the whole row. A hidden row keeps its values in the model.
+     */
+    public void setVisible(boolean visible) {
+        root.setVisibility(visible ? View.VISIBLE : View.GONE);
+    }
+
     public void setEnabled(boolean enabled) {
+        valueLayout.setEnabled(enabled);
         valueField.setEnabled(enabled);
-        directionButton.setEnabled(enabled);
+        deltaLayout.setEnabled(enabled);
         deltaField.setEnabled(enabled);
+        directionGroup.setEnabled(enabled);
+        for (int i = 0; i < directionGroup.getChildCount(); i++) {
+            directionGroup.getChildAt(i).setEnabled(enabled);
+        }
         label.setEnabled(enabled);
     }
 
@@ -104,7 +132,9 @@ public class ValueDeltaRow {
     }
 
     private void updateDirectionButton() {
-        directionButton.setText(delta.getDirection() == DeltaDirection.INC ? R.string.delta_inc : R.string.delta_dec);
+        binding = true;
+        directionGroup.check(delta.getDirection() == DeltaDirection.INC ? R.id.btn_inc : R.id.btn_dec);
+        binding = false;
     }
 
     private void setupNumberField(@NonNull EditText field) {

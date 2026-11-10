@@ -1,9 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <!-- Blue ("water") Material 3 palette, light scheme -->
+    <color name="md_primary">#FF0B6BCB</color>
+    <color name="md_on_primary">#FFFFFFFF</color>
+    <color name="md_primary_container">#FFD3E4FF</color>
+    <color name="md_on_primary_container">#FF001C3A</color>
+    <color name="md_secondary">#FF535F70</color>
+    <color name="md_on_secondary">#FFFFFFFF</color>
+    <color name="md_secondary_container">#FFD7E3F8</color>
+    <color name="md_on_secondary_container">#FF101C2B</color>
+    <color name="md_tertiary">#FF00696F</color>
+    <color name="md_on_tertiary">#FFFFFFFF</color>
+    <color name="md_tertiary_container">#FF9CF0F7</color>
+    <color name="md_on_tertiary_container">#FF002022</color>
+    <color name="md_error">#FFBA1A1A</color>
+    <color name="md_on_error">#FFFFFFFF</color>
+    <color name="md_error_container">#FFFFDAD6</color>
+    <color name="md_on_error_container">#FF410002</color>
+    <!-- Tinted window background; cards are plain surface on top of it -->
+    <color name="md_background">#FFEAF3FC</color>
+    <color name="md_on_background">#FF191C20</color>
+    <color name="md_surface">#FFFAFCFF</color>
+    <color name="md_on_surface">#FF191C20</color>
+    <color name="md_surface_variant">#FFDFE2EB</color>
+    <color name="md_on_surface_variant">#FF43474E</color>
+    <color name="md_outline">#FF73777F</color>
+    <color name="md_outline_variant">#FFC3C7CF</color>
+
+    <!-- START button states and connection state -->
     <color name="start_inactive">#FF9E9E9E</color>
     <color name="start_ready">#FF2E7D32</color>
     <color name="start_active">#FFF9A825</color>
     <color name="nav_connected">#FF1E88E5</color>
+
+    <!-- Graph bars -->
+    <color name="graph_drop">#FF1E88E5</color>
+    <color name="graph_flash">#FFF9A825</color>
+    <color name="graph_camera">#FF2E7D32</color>
 </resources>

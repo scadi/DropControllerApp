@@ -1,67 +1,90 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="?android:attr/colorBackground"
+    android:fitsSystemWindows="true"
     android:orientation="vertical"
     tools:context=".LoopActivity">
 
-    <TextView
-        android:id="@+id/tv_loop_sequence"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:padding="16dp"
-        android:textAppearance="?attr/textAppearanceHeadlineSmall" />
+    <!-- Status card: sequence number and what the loop is doing -->
+    <com.google.android.material.card.MaterialCardView
+        style="@style/Widget.DropController.Card"
+        android:layout_margin="16dp"
+        app:cardBackgroundColor="?attr/colorPrimaryContainer"
+        app:strokeWidth="0dp">
 
-    <TextView
-        android:id="@+id/tv_loop_status"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingHorizontal="16dp"
-        android:paddingBottom="8dp"
-        android:textStyle="bold" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:id="@+id/tv_loop_sequence"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAppearance="?attr/textAppearanceHeadlineSmall"
+                android:textColor="?attr/colorOnPrimaryContainer" />
+
+            <TextView
+                android:id="@+id/tv_loop_status"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textAppearance="?attr/textAppearanceTitleMedium"
+                android:textColor="?attr/colorOnPrimaryContainer" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
 
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:clipToPadding="false">
 
+        <!-- One card per drop, then CT and FT lines; added by LoopActivity -->
         <LinearLayout
             android:id="@+id/ll_loop_lines"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp" />
+            android:paddingHorizontal="16dp" />
     </ScrollView>
 
-    <!-- Filled buttons are intended here, not borderless button bar buttons -->
+    <!-- START is filled, STOP is tonal, RESET is outlined -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="8dp"
+        android:padding="12dp"
         tools:ignore="ButtonStyle">
 
         <Button
             android:id="@+id/btn_loop_start"
+            style="@style/Widget.Material3.Button"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="56dp"
             android:layout_marginHorizontal="4dp"
             android:layout_weight="1"
             android:text="@string/btn_start" />
 
         <Button
             android:id="@+id/btn_loop_stop"
+            style="@style/Widget.Material3.Button.TonalButton"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="56dp"
             android:layout_marginHorizontal="4dp"
             android:layout_weight="1"
             android:text="@string/btn_stop" />
 
         <Button
             android:id="@+id/btn_loop_reset"
+            style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="56dp"
             android:layout_marginHorizontal="4dp"
             android:layout_weight="1"
             android:text="@string/btn_reset" />

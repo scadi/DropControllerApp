@@ -23,11 +23,19 @@ public class LoopControllerTest {
         final List<LoopController.State> states = new ArrayList<>();
         final List<Integer> countdowns = new ArrayList<>();
         int dataChangedCount = 0;
+        int countdownFinishedCount = 0;
+        int sentCountAtCountdownFinished = -1;
 
         @Override
         public void onSendSequence(int sequenceNumber, @NonNull SequenceData data) {
             sentSequenceNumbers.add(sequenceNumber);
             sentData.add(data);
+        }
+
+        @Override
+        public void onCountdownFinished() {
+            countdownFinishedCount++;
+            sentCountAtCountdownFinished = sentSequenceNumbers.size();
         }
 
         @Override
@@ -97,6 +105,36 @@ public class LoopControllerTest {
         assertEquals(LoopController.State.SEQUENCE_ACTIVE, loop.getState());
         assertEquals(2, recorder.sentSequenceNumbers.size());
         assertEquals(2, (int) recorder.sentSequenceNumbers.get(1));
+    }
+
+    @Test
+    public void timer_countdownFinished_isReportedOnceBeforeNextSequence() {
+        LoopController loop = create();
+        loop.start();
+        loop.onSequenceFinished();
+
+        loop.onSecondTick();
+        loop.onSecondTick();
+        assertEquals(0, recorder.countdownFinishedCount);
+
+        loop.onSecondTick();
+        assertEquals(1, recorder.countdownFinishedCount);
+        // The event comes before the next sequence is sent
+        assertEquals(1, recorder.sentCountAtCountdownFinished);
+        assertEquals(2, recorder.sentSequenceNumbers.size());
+    }
+
+    @Test
+    public void countdownFinished_isNotReportedWhenStoppedDuringCountdown() {
+        LoopController loop = create();
+        loop.start();
+        loop.onSequenceFinished();
+        loop.onSecondTick();
+
+        loop.stop();
+        loop.onSecondTick();
+
+        assertEquals(0, recorder.countdownFinishedCount);
     }
 
     @Test
