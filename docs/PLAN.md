@@ -55,7 +55,9 @@ Status legend: `[ ]` todo, `[x]` done.
 
 ## Stage 3. Drops tab
 - [x] Per-drop rows: SOL, START, START delta, SIZE, SIZE delta; only the selected number of drops is active.
-- [x] Camera trigger controls (OFF / ON + time / ON + Bulb) and flash 1-3 controls, with deltas.
+- [x] Camera trigger controls (OFF / ON + time / ON + Bulb) and flash 1-3 controls, with deltas. The Bulb switch sits
+      at the end of the camera row's label line, level with the camera icon (it was a separate row below the camera
+      fields); it is the optional `sw_extra` switch of `view_value_delta`, used only by the camera row.
 - [x] Hide the controls of a trigger that is OFF in Settings (was: disable). The Triggers card disappears when
       all four triggers are OFF. Done in `DropsFragment.updateTriggerStates`, `ValueDeltaRow.setVisible`.
       Changed on the user's request; the original app greys the controls out.
@@ -155,6 +157,23 @@ Steps:
   icon selects n drops (the first n icons are filled with the accent color, the rest are dimmed, the number is shown
   next to the title). Appearance and input only: the value still goes through `AppSettings.setNumDrops` and is saved
   at once. The `Spinner` and `bg_dropdown` stay in use for SOL on the Drops tab.
+- [x] More interactive Settings (appearance and input only; the model, saving and the protocol are unchanged):
+  - Wait time: a slider (0-120 s) under the field. The slider and the field follow each other; times above 120 s are
+    typed into the field (the slider then stays at its end).
+  - Trigger pulse times: quick value chips 20 / 50 / 100 / 200 ms under the camera and flash fields. The chip that
+    equals the current value is checked; a custom value checks none.
+  - Triggers enabled: four filter chips (Camera, Flash 1-3) replace the four switches. Checked means ON.
+  - Loop Mode OFF: the delay method and wait time block is dimmed (alpha 0.4) but stays editable.
+  - Trigger names are spelled out ("Camera trigger", "Flash trigger N") on the Loop Page.
+  - Icons instead of text labels (Graph and Drops tab): a drop, a flash and a camera (`ic_drop_*`, `ic_flash_*`,
+    `ic_camera_*`). Graph rows are tinted with the text color; drops and flash triggers keep their number next to the
+    icon. On the Drops tab the drop card title is the drop icon with the number, and the trigger rows are labeled with
+    the camera icon and the flash icon with its number (`ValueDeltaRow.setIconLabel`). The full names stay as content
+    descriptions for screen readers.
+  - Settings: the pulse time fields have the camera / flash icon as the start icon and the short hint "Time (ms)"; the
+    trigger enable chips show the camera icon and the flash icon with its number (no check mark, the checked state is
+    the chip color). The Bulb chip (camera Bulb mode, available while the camera trigger is enabled) stays in the same
+    group and shows a light bulb icon (`ic_bulb_*`).
 - [ ] Run `./gradlew assembleDebug lintDebug testDebugUnitTest` after each step; manual pass on a device
       (rotation, dark mode, 9 drops scrolling, keyboard Done). The commands pass; the device pass is left.
 
@@ -192,8 +211,8 @@ Steps:
 - [x] 8.3 `DropControllerApp`: expose the repository and `applyPreset(...)`, which copies the preset into the shared
       `settings` / `sequence` (Sounds untouched), saves both and is refused while `SequenceRunner.isActive()`.
 - [x] 8.4 Drops tab layout: one row at the bottom: START takes the free width, SAVE and LOAD are icon buttons
-      (tonal, as big as their icons) to its right. Changed after the first version (START with SAVE above LOAD)
-      on the user's request. Strings in `strings.xml` (used as content descriptions).
+      (tonal, round, 64 dp: the same height as START) to its right. Changed after the first version (START with SAVE
+      above LOAD, then icon-sized buttons) on the user's request. Strings in `strings.xml` (used as content descriptions).
 - [x] 8.5 Locking: Save and Load are disabled while `SequenceRunner.isActive()` and enabled again when the sequence
       ends (same update path as `updateStartButton`).
 - [x] 8.6 Save dialog: a text field for the name (Done confirms, empty or too long name rejected with an error in the

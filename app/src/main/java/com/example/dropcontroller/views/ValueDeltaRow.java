@@ -5,6 +5,7 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.StringRes;
 
@@ -13,6 +14,7 @@ import com.example.dropcontroller.data.DeltaDirection;
 import com.example.dropcontroller.data.DeltaValue;
 import com.example.dropcontroller.data.Limits;
 import com.google.android.material.button.MaterialButtonToggleGroup;
+import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.textfield.TextInputLayout;
 
 import java.util.function.IntConsumer;
@@ -32,6 +34,7 @@ public class ValueDeltaRow {
     private final TextInputLayout valueLayout;
     private final TextInputLayout deltaLayout;
     private final TextView label;
+    private final MaterialSwitch extraSwitch;
     private final DeltaValue delta;
     private final IntSupplier getter;
     private final IntConsumer setter;
@@ -50,6 +53,7 @@ public class ValueDeltaRow {
                          @NonNull IntConsumer setter, @NonNull Runnable onChanged) {
         this.root = root;
         this.label = root.findViewById(R.id.tv_label);
+        this.extraSwitch = root.findViewById(R.id.sw_extra);
         this.valueLayout = root.findViewById(R.id.til_value);
         this.valueField = root.findViewById(R.id.et_value);
         this.directionGroup = root.findViewById(R.id.tg_direction);
@@ -66,6 +70,7 @@ public class ValueDeltaRow {
         valueLayout.setSaveEnabled(false);
         deltaLayout.setSaveEnabled(false);
         directionGroup.setSaveEnabled(false);
+        extraSwitch.setSaveEnabled(false);
         root.findViewById(R.id.btn_inc).setSaveEnabled(false);
         root.findViewById(R.id.btn_dec).setSaveEnabled(false);
 
@@ -83,6 +88,26 @@ public class ValueDeltaRow {
 
     public void setLabel(@StringRes int resId, Object... formatArgs) {
         label.setText(label.getContext().getString(resId, formatArgs));
+    }
+
+    /**
+     * Labels the row with an icon and a short text (may be empty); the description is read by screen readers.
+     */
+    public void setIconLabel(@DrawableRes int iconResId, @NonNull CharSequence text,
+                             @NonNull CharSequence description) {
+        label.setText(text);
+        label.setContentDescription(description);
+        label.setCompoundDrawablePadding((int) (6 * label.getResources().getDisplayMetrics().density));
+        label.setCompoundDrawablesRelativeWithIntrinsicBounds(iconResId, 0, 0, 0);
+    }
+
+    /**
+     * The optional switch at the end of the label line. It is hidden until the caller makes it visible, and it
+     * stays usable when the rest of the row is disabled by {@link #setEnabled(boolean)}.
+     */
+    @NonNull
+    public MaterialSwitch getExtraSwitch() {
+        return extraSwitch;
     }
 
     /**

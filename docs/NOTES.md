@@ -29,6 +29,9 @@ Mark an item `[x]` here when it has been dealt with, and say where.
       values, that the Loop Page (if open) follows, and that the first launch follows the system theme.
 - [x] Dark theme switch had no "follow the system" choice after the first tap. Replaced by a SYSTEM / LIGHT / DARK
       segmented button (stage 7).
+- [ ] Interactive Settings (drop icons, wait time slider, pulse chips, trigger chips, dimmed Loop options): not tested
+      on a device. Check the drop icon sizes on a narrow screen, dragging over the icons inside the scrolling page,
+      the slider against the field (including a time above 120 s), and the look of the checked chips in both themes.
 - [ ] Light theme: the surface/background (1.09:1) and card outline (1.65:1) contrast is low by Material 3 design;
       raise `md_outline_variant` if the cards blend into the background on a real screen.
 - [ ] Tablet / landscape layouts for the Drops tab (9 drop rows are tall).

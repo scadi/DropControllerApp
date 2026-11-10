@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.util.TypedValue;
 import android.view.View;
@@ -12,6 +13,7 @@ import androidx.annotation.ColorInt;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
+import androidx.core.graphics.drawable.DrawableCompat;
 
 import com.example.dropcontroller.R;
 import com.example.dropcontroller.logic.GraphModel;
@@ -28,6 +30,8 @@ public class GraphCanvasView extends View {
     private static final float ROW_HEIGHT_DP = 32f;
     private static final float BAR_HEIGHT_DP = 18f;
     private static final float LABEL_WIDTH_DP = 44f;
+    private static final float ICON_SIZE_DP = 18f;
+    private static final float ICON_GAP_DP = 3f;
     private static final float AXIS_HEIGHT_DP = 32f;
     private static final float PADDING_DP = 8f;
     private static final float TEXT_SIZE_SP = 12f;
@@ -40,6 +44,11 @@ public class GraphCanvasView extends View {
 
     private float density;
     private GraphModel model;
+
+    // Row label icons: a drop, a flash and a camera (tinted with the text color)
+    private Drawable dropIcon;
+    private Drawable flashIcon;
+    private Drawable cameraIcon;
 
     @ColorInt
     private int dropColor;
@@ -79,8 +88,19 @@ public class GraphCanvasView extends View {
         gridPaint.setStrokeWidth(1f);
 
         textPaint.setColor(textColor);
+
+        dropIcon = loadIcon(R.drawable.ic_drop_black_24dp, textColor);
+        flashIcon = loadIcon(R.drawable.ic_flash_black_24dp, textColor);
+        cameraIcon = loadIcon(R.drawable.ic_camera_black_24dp, textColor);
         textPaint.setTextSize(TypedValue.applyDimension(
                 TypedValue.COMPLEX_UNIT_SP, TEXT_SIZE_SP, getResources().getDisplayMetrics()));
+    }
+
+    @NonNull
+    private Drawable loadIcon(int resId, @ColorInt int color) {
+        Drawable icon = DrawableCompat.wrap(ContextCompat.getDrawable(getContext(), resId).mutate());
+        DrawableCompat.setTint(icon, color);
+        return icon;
     }
 
     /** Sets the data to draw and redraws. */
@@ -139,7 +159,7 @@ public class GraphCanvasView extends View {
             float rowTop = top + i * rowHeight;
             float centerY = rowTop + rowHeight / 2f;
 
-            canvas.drawText(labelFor(bar), padding, centerY + textOffset, textPaint);
+            drawLabel(canvas, bar, padding, centerY, textOffset);
 
             float barLeft = left + bar.getStartMs() * scale;
             float barRight = Math.max(left + bar.getStopMs() * scale, barLeft + MIN_BAR_WIDTH_PX);
@@ -148,15 +168,30 @@ public class GraphCanvasView extends View {
         }
     }
 
-    @NonNull
-    private String labelFor(@NonNull GraphModel.Bar bar) {
+    // Icon of the row type; drops and flash triggers also get their number next to the icon
+    private void drawLabel(@NonNull Canvas canvas, @NonNull GraphModel.Bar bar, float x, float centerY,
+                           float textOffset) {
+        Drawable icon;
         switch (bar.getType()) {
             case DROP:
-                return getContext().getString(R.string.graph_label_drop, bar.getIndex());
+                icon = dropIcon;
+                break;
             case FLASH:
-                return getContext().getString(R.string.graph_label_flash, bar.getIndex());
+                icon = flashIcon;
+                break;
             default:
-                return getContext().getString(R.string.graph_label_camera);
+                icon = cameraIcon;
+                break;
+        }
+        int size = (int) (ICON_SIZE_DP * density);
+        int iconLeft = (int) x;
+        int iconTop = (int) (centerY - size / 2f);
+        icon.setBounds(iconLeft, iconTop, iconLeft + size, iconTop + size);
+        icon.draw(canvas);
+
+        if (bar.getType() != GraphModel.BarType.CAMERA) {
+            canvas.drawText(String.valueOf(bar.getIndex()), iconLeft + size + ICON_GAP_DP * density,
+                    centerY + textOffset, textPaint);
         }
     }
 

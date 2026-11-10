@@ -227,7 +227,10 @@ public class DropsFragment extends Fragment {
 
     @NonNull
     private DropRow createDropRow(@NonNull View item, int index, @NonNull DropData drop) {
-        ((TextView) item.findViewById(R.id.tv_drop_title)).setText(getString(R.string.drop_title, index + 1));
+        // The drop icon is part of the layout; the full name is for screen readers
+        TextView title = item.findViewById(R.id.tv_drop_title);
+        title.setText(String.valueOf(index + 1));
+        title.setContentDescription(getString(R.string.drop_title, index + 1));
 
         Spinner solenoid = item.findViewById(R.id.sp_solenoid);
         solenoid.setSaveEnabled(false);
@@ -279,9 +282,11 @@ public class DropsFragment extends Fragment {
         CameraTrigger camera = sequence.getCamera();
         cameraRow = new ValueDeltaRow(view.findViewById(R.id.row_camera), camera.getDelta(),
                 camera::getTime, camera::setTime, app::saveSequence);
-        cameraRow.setLabel(R.string.trigger_camera);
+        cameraRow.setIconLabel(R.drawable.ic_camera_black_24dp, "", getString(R.string.trigger_camera));
 
-        bulbSwitch = view.findViewById(R.id.sw_bulb);
+        // Bulb sits in the label line of the camera row, next to the camera icon
+        bulbSwitch = cameraRow.getExtraSwitch();
+        bulbSwitch.setText(R.string.trigger_bulb);
         bulbSwitch.setOnCheckedChangeListener((button, checked) -> {
             if (!binding) {
                 camera.setBulb(checked);
@@ -295,7 +300,8 @@ public class DropsFragment extends Fragment {
             FlashTrigger flash = sequence.getFlash(i);
             flashRows[i] = new ValueDeltaRow(view.findViewById(flashRowIds[i]), flash.getDelta(),
                     flash::getTime, flash::setTime, app::saveSequence);
-            flashRows[i].setLabel(R.string.trigger_flash, i + 1);
+            flashRows[i].setIconLabel(R.drawable.ic_flash_black_24dp, String.valueOf(i + 1),
+                    getString(R.string.trigger_flash, i + 1));
         }
     }
 
