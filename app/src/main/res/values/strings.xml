@@ -127,8 +127,13 @@
     <string name="settings_flash3_enabled">Flash trigger 3</string>
 
     <string name="settings_sounds">Sounds</string>
-    <string name="settings_dark_theme">Dark theme</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_system">SYSTEM</string>
+    <string name="settings_theme_light">LIGHT</string>
+    <string name="settings_theme_dark">DARK</string>
     <string name="btn_reset">RESET</string>
+    <string name="reset_confirm_title">Reset everything?</string>
+    <string name="reset_confirm_message">All settings and drop data will be set back to their defaults. Saved presets and the Sounds and Theme settings are kept.</string>
 
     <string name="bt_select_device">Select Bluetooth Device</string>
     <string name="bt_cancel">Cancel</string>

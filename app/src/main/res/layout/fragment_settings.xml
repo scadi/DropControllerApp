@@ -250,12 +250,47 @@
                     android:minHeight="48dp"
                     android:text="@string/settings_sounds" />
 
-                <com.google.android.material.materialswitch.MaterialSwitch
-                    android:id="@+id/sw_dark_theme"
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="8dp"
+                    android:text="@string/settings_theme"
+                    android:textAppearance="?attr/textAppearanceLabelLarge"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
+
+                <!-- System / Light / Dark as a segmented button; exactly one segment is always selected -->
+                <com.google.android.material.button.MaterialButtonToggleGroup
+                    android:id="@+id/tg_theme"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:minHeight="48dp"
-                    android:text="@string/settings_dark_theme" />
+                    app:selectionRequired="true"
+                    app:singleSelection="true">
+
+                    <Button
+                        android:id="@+id/btn_theme_system"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/settings_theme_system" />
+
+                    <Button
+                        android:id="@+id/btn_theme_light"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/settings_theme_light" />
+
+                    <Button
+                        android:id="@+id/btn_theme_dark"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/settings_theme_dark" />
+                </com.google.android.material.button.MaterialButtonToggleGroup>
 
                 <!-- RESET erases all drop data, so it is outlined in the error color -->
                 <Button

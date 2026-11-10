@@ -141,12 +141,15 @@ Steps:
       cards: dark text, dark cards: light text). START label color per state
       (`start_*_text`, readable on grey / green / yellow in light and dark); light `graph_flash` darkened to
       `#D17B00` (was 1.9:1 on the card surface).
-- [x] Dark theme switch in Settings (card with Sounds and RESET). `AppSettings.themeMode` (`ThemeMode`: SYSTEM / LIGHT /
-      DARK), saved by `StateStorage`; `DropControllerApp.applyThemeMode()` calls `AppCompatDelegate.setDefaultNightMode`
-      on start and after a change (open activities are recreated; `MainActivity` skips the splash and keeps the tab).
-      The switch shows the theme on screen. The first tap turns SYSTEM into an explicit LIGHT / DARK; there is no way
-      back to "follow the system" except clearing the app data. Like Sounds, the theme is not part of a preset;
-      RESET keeps it.
+- [x] Theme selector in Settings (card with Sounds and RESET). `AppSettings.themeMode` (`ThemeMode`: SYSTEM / LIGHT /
+  DARK), saved by `StateStorage`; `DropControllerApp.applyThemeMode()` calls `AppCompatDelegate.setDefaultNightMode`
+  on start and after a change (open activities are recreated; `MainActivity` skips the splash and keeps the tab).
+  Changed after the first version (a Dark theme switch, which could not go back to "follow the system"): the
+  selector is now a SYSTEM / LIGHT / DARK segmented button (`tg_theme`, selection required). Like Sounds, the theme
+  is not part of a preset; RESET keeps it.
+- [x] RESET asks for confirmation first (`MaterialAlertDialogBuilder`, "Reset everything?"; Cancel keeps the data).
+  New behavior, not in the original app: RESET erases all drop data. Dialogs in `SettingsFragment` are dismissed in
+  `onDestroyView` so rotation does not leak a window.
 - [ ] Run `./gradlew assembleDebug lintDebug testDebugUnitTest` after each step; manual pass on a device
       (rotation, dark mode, 9 drops scrolling, keyboard Done). The commands pass; the device pass is left.
 

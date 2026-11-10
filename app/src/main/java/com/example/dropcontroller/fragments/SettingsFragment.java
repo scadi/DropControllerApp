@@ -1,8 +1,6 @@
 package com.example.dropcontroller.fragments;
 
-import android.app.AlertDialog;
 import android.bluetooth.BluetoothDevice;
-import android.content.res.Configuration;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -18,6 +16,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 
 import com.example.dropcontroller.DropControllerApp;
@@ -29,6 +28,7 @@ import com.example.dropcontroller.data.SequenceData;
 import com.example.dropcontroller.data.ThemeMode;
 import com.example.dropcontroller.services.BluetoothHelper;
 import com.google.android.material.button.MaterialButtonToggleGroup;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.materialswitch.MaterialSwitch;
 
 import java.util.ArrayList;
@@ -54,7 +54,9 @@ public class SettingsFragment extends Fragment {
     private MaterialSwitch cameraSwitch;
     private final MaterialSwitch[] flashSwitches = new MaterialSwitch[SequenceData.FLASH_COUNT];
     private MaterialSwitch soundsSwitch;
-    private MaterialSwitch darkThemeSwitch;
+    private MaterialButtonToggleGroup themeGroup;
+
+    private AlertDialog dialog;
 
     // True while the views are filled from the model, so the change listeners do not write back
     private boolean binding;
@@ -97,7 +99,7 @@ public class SettingsFragment extends Fragment {
         flashSwitches[1] = view.findViewById(R.id.sw_flash2);
         flashSwitches[2] = view.findViewById(R.id.sw_flash3);
         soundsSwitch = view.findViewById(R.id.sw_sounds);
-        darkThemeSwitch = view.findViewById(R.id.sw_dark_theme);
+        themeGroup = view.findViewById(R.id.tg_theme);
 
         setupNumDropsSpinner();
         setupListeners(view);
@@ -110,6 +112,13 @@ public class SettingsFragment extends Fragment {
         super.onStart();
         bluetoothHelper.addListener(bluetoothListener);
         updateConnectButton(bluetoothHelper.getState());
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        // Avoid a leaked dialog window when the view is re-created (rotation)
+        dismissDialog();
     }
 
     @Override
@@ -155,14 +164,30 @@ public class SettingsFragment extends Fragment {
             flashSwitches[i].setChecked(sequence.getFlash(i).isEnabled());
         }
         soundsSwitch.setChecked(settings.isSoundsOn());
-        // Shows the theme that is on screen now, also while the mode is still "follow the system"
-        darkThemeSwitch.setChecked(isNightModeActive());
+        themeGroup.check(themeButtonId(settings.getThemeMode()));
         binding = false;
     }
 
-    private boolean isNightModeActive() {
-        int nightMask = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
-        return nightMask == Configuration.UI_MODE_NIGHT_YES;
+    private static int themeButtonId(@NonNull ThemeMode mode) {
+        switch (mode) {
+            case LIGHT:
+                return R.id.btn_theme_light;
+            case DARK:
+                return R.id.btn_theme_dark;
+            default:
+                return R.id.btn_theme_system;
+        }
+    }
+
+    @NonNull
+    private static ThemeMode themeModeOf(int buttonId) {
+        if (buttonId == R.id.btn_theme_light) {
+            return ThemeMode.LIGHT;
+        }
+        if (buttonId == R.id.btn_theme_dark) {
+            return ThemeMode.DARK;
+        }
+        return ThemeMode.SYSTEM;
     }
 
     private void setupListeners(@NonNull View view) {
@@ -217,19 +242,37 @@ public class SettingsFragment extends Fragment {
             }
         });
 
-        darkThemeSwitch.setOnCheckedChangeListener((button, checked) -> {
-            if (!binding) {
-                app.getSettings().setThemeMode(checked ? ThemeMode.DARK : ThemeMode.LIGHT);
+        themeGroup.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
+            if (!binding && isChecked) {
+                app.getSettings().setThemeMode(themeModeOf(checkedId));
                 app.saveSettings();
                 // Recreates the open activities with the new theme
                 app.applyThemeMode();
             }
         });
 
-        view.findViewById(R.id.btn_reset).setOnClickListener(v -> {
-            app.resetAll();
-            bindViews();
-        });
+        view.findViewById(R.id.btn_reset).setOnClickListener(v -> confirmReset());
+    }
+
+    // RESET erases all drop data, so it asks first (the original app does not)
+    private void confirmReset() {
+        dismissDialog();
+        dialog = new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.reset_confirm_title)
+                .setMessage(R.string.reset_confirm_message)
+                .setPositiveButton(R.string.btn_reset, (d, which) -> {
+                    app.resetAll();
+                    bindViews();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void dismissDialog() {
+        if (dialog != null) {
+            dialog.dismiss();
+            dialog = null;
+        }
     }
 
     private interface BooleanSetter {
@@ -332,7 +375,8 @@ public class SettingsFragment extends Fragment {
         ArrayAdapter<String> adapter =
                 new ArrayAdapter<>(requireContext(), android.R.layout.select_dialog_item, deviceLabels);
 
-        new AlertDialog.Builder(requireContext())
+        dismissDialog();
+        dialog = new MaterialAlertDialogBuilder(requireContext())
                 .setTitle(R.string.bt_select_device)
                 // Runs when a device is selected (Analogous to ListPicker.AfterPicking)
                 .setAdapter(adapter, (dialog, which) -> bluetoothHelper.connect(deviceList.get(which)))
