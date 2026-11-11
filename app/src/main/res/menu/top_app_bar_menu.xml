@@ -7,4 +7,9 @@
         android:icon="@drawable/ic_bluetooth_black_24dp"
         android:title="@string/status_not_connected"
         app:showAsAction="always" />
+    <!-- Debug builds only: removed in MainActivity when the app is not debuggable -->
+    <item
+        android:id="@+id/action_protocol_log"
+        android:title="@string/protocol_log_title"
+        app:showAsAction="never" />
 </menu>

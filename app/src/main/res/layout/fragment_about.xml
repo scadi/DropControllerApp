@@ -41,5 +41,14 @@
                     android:textAppearance="?attr/textAppearanceBodyLarge" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
+
+        <!-- Communication log: available in every build -->
+        <Button
+            android:id="@+id/btn_communication_log"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="16dp"
+            android:text="@string/about_communication_log" />
     </LinearLayout>
 </ScrollView>

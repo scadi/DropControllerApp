@@ -14,14 +14,19 @@ import android.os.Looper;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.core.content.ContextCompat;
 
 import com.example.dropcontroller.R;
 import com.example.dropcontroller.logic.DeviceMessage;
+import com.example.dropcontroller.logic.DeviceSimulator;
 import com.example.dropcontroller.logic.MessageFramer;
 import com.example.dropcontroller.logic.ProtocolEncoder;
+import com.example.dropcontroller.logic.ProtocolFileLog;
+import com.example.dropcontroller.logic.ProtocolLog;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -71,6 +76,8 @@ public class BluetoothHelper {
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();
     private final ExecutorService writeExecutor = Executors.newSingleThreadExecutor();
+    private final ProtocolLog protocolLog = new ProtocolLog();
+    private final ProtocolFileLog protocolFileLog;
 
     private volatile State state = State.DISCONNECTED;
     // Incremented by disconnect() so that queued paced writes of an old connection are abandoned
@@ -82,6 +89,8 @@ public class BluetoothHelper {
 
     public BluetoothHelper(@NonNull Context context) {
         this.appContext = context.getApplicationContext();
+        this.protocolFileLog = new ProtocolFileLog(
+                new File(appContext.getFilesDir(), "logs/protocol.log"));
         BluetoothManager manager = appContext.getSystemService(BluetoothManager.class);
         this.bluetoothAdapter = manager != null ? manager.getAdapter() : null;
     }
@@ -107,6 +116,22 @@ public class BluetoothHelper {
 
     public boolean isConnected() {
         return state == State.CONNECTED;
+    }
+
+    /**
+     * @return the log of the messages sent to and received from the device (debug protocol check)
+     */
+    @NonNull
+    public ProtocolLog getProtocolLog() {
+        return protocolLog;
+    }
+
+    /**
+     * @return the file log of the messages sent to and received from the device (survives an app restart)
+     */
+    @NonNull
+    public ProtocolFileLog getProtocolFileLog() {
+        return protocolFileLog;
     }
 
     // ----------------------------------------------------
@@ -179,6 +204,16 @@ public class BluetoothHelper {
         setState(State.CONNECTING);
         connectThread = new ConnectThread(device);
         connectThread.start();
+    }
+
+    /**
+     * Opens an in-process connection to a simulated dropController instead of a Bluetooth device.
+     * Only reachable from the debug-only simulator entry in the Settings tab.
+     */
+    public synchronized void connectSimulator() {
+        cancelThreads();
+        setState(State.CONNECTING);
+        connected(null, new SimulatorLink(new DeviceSimulator()));
     }
 
     /**
@@ -317,7 +352,7 @@ public class BluetoothHelper {
                 return;
             }
 
-            connected(this, socket);
+            connected(this, new RfcommLink(socket));
         }
 
         // Closes the client socket and causes the thread to finish
@@ -332,16 +367,16 @@ public class BluetoothHelper {
 
     // Thread for handling incoming data. Outgoing data is written from the write executor.
     private class ConnectedThread extends Thread {
-        private final BluetoothSocket mmSocket;
+        private final DeviceLink mmLink;
         private final InputStream mmInStream;
         private final OutputStream mmOutStream;
         private final MessageFramer framer = new MessageFramer();
         private volatile boolean cancelled = false;
 
-        ConnectedThread(@NonNull BluetoothSocket socket) throws IOException {
-            mmSocket = socket;
-            mmInStream = socket.getInputStream();
-            mmOutStream = socket.getOutputStream();
+        ConnectedThread(@NonNull DeviceLink link) throws IOException {
+            mmLink = link;
+            mmInStream = link.getInputStream();
+            mmOutStream = link.getOutputStream();
         }
 
         @Override
@@ -356,6 +391,7 @@ public class BluetoothHelper {
                         break; // End of stream: the remote side closed the connection
                     }
                     for (String payload : framer.feed(buffer, 0, bytes)) {
+                        recordReceived(payload);
                         deliverMessage(DeviceMessage.parse(payload));
                     }
                 } catch (IOException e) {
@@ -375,6 +411,7 @@ public class BluetoothHelper {
             try {
                 mmOutStream.write(bytes);
                 mmOutStream.flush();
+                recordSent(new String(bytes, StandardCharsets.US_ASCII));
             } catch (IOException e) {
                 Log.w(TAG, "Write failed", e);
                 notifyError(R.string.bt_send_error);
@@ -383,6 +420,32 @@ public class BluetoothHelper {
 
         void cancel() {
             cancelled = true;
+            mmLink.close();
+        }
+    }
+
+    // Real Bluetooth Classic SPP link (RFCOMM socket)
+    private static final class RfcommLink implements DeviceLink {
+        private final BluetoothSocket mmSocket;
+
+        RfcommLink(@NonNull BluetoothSocket socket) {
+            mmSocket = socket;
+        }
+
+        @NonNull
+        @Override
+        public InputStream getInputStream() throws IOException {
+            return mmSocket.getInputStream();
+        }
+
+        @NonNull
+        @Override
+        public OutputStream getOutputStream() throws IOException {
+            return mmSocket.getOutputStream();
+        }
+
+        @Override
+        public void close() {
             closeQuietly(mmSocket);
         }
     }
@@ -391,20 +454,32 @@ public class BluetoothHelper {
     // Helper methods for status reporting
     // ----------------------------------------------------
 
-    private synchronized void connected(@NonNull ConnectThread caller, @NonNull BluetoothSocket socket) {
-        if (connectThread != caller) {
+    private void recordSent(@NonNull String message) {
+        protocolLog.sent(message);
+        protocolFileLog.sent(message);
+    }
+
+    private void recordReceived(@NonNull String payload) {
+        protocolLog.received(payload);
+        protocolFileLog.received(payload);
+    }
+
+    private synchronized void connected(@Nullable ConnectThread caller, @NonNull DeviceLink link) {
+        if (caller != null && connectThread != caller) {
             // Cancelled or replaced while connecting
-            closeQuietly(socket);
+            link.close();
             return;
         }
-        connectThread = null;
+        if (caller != null) {
+            connectThread = null;
+        }
 
         ConnectedThread thread;
         try {
-            thread = new ConnectedThread(socket);
+            thread = new ConnectedThread(link);
         } catch (IOException e) {
             Log.w(TAG, "Failed to get streams", e);
-            closeQuietly(socket);
+            link.close();
             setState(State.DISCONNECTED);
             notifyError(R.string.bt_connection_failed);
             return;

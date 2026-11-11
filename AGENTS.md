@@ -12,7 +12,8 @@ Guidance for agentic coding agents working in this repository.
 - Controls a "drop" device over Bluetooth Classic (SPP/RFCOMM, HC-05/Arduino style). Logic was ported from an MIT App Inventor project; comments refer to "TinyDB", "ListPicker", "Clock_LoopDelayTimer", "BluetoothClient1".
 - Package / applicationId: `com.example.dropcontroller`. `minSdk` 24, `compileSdk`/`targetSdk` 36.
 - UI is View-based (XML layouts, `findViewById`). No Compose, no ViewBinding, no DI framework, no ViewModel/LiveData.
-- Build uses Gradle Kotlin DSL (`*.kts`) and a version catalog at `gradle/libs.versions.toml`. Gradle 8.13, AGP 8.13.1. JDK 21 (JBR) is used locally.
+- Build uses Gradle Kotlin DSL (`*.kts`) and a version catalog at `gradle/libs.versions.toml`. Gradle 9.6.0,
+  AGP 8.13.1. JDK 21 (JBR) is used locally.
 - No Cursor rules, Copilot instructions, or `.editorconfig` exist. No checkstyle/spotless/PMD configured.
 
 ## Product Context (dropController V3 Android app)
@@ -69,9 +70,12 @@ app/src/main/java/com/example/dropcontroller/
   config/AppPreferences.java   SharedPreferences wrapper (KeyValueStore)
   config/StateStorage.java     saves/loads AppSettings and SequenceData
   data/*.java                  models: AppSettings, SequenceData, DropData, triggers, deltas, Limits
-  logic/*.java                 plain Java (no Android): protocol encoder/framer, timing, loop state machine
+  logic/*.java                 plain Java (no Android): protocol encoder/framer, timing, loop state machine,
+                               device simulator for testing without hardware, protocol logs
   fragments/*Fragment.java     About, Drain, Drops, Graph, Settings
   services/BluetoothHelper.java Bluetooth connect/send/receive, listener callbacks on the main thread
+  services/DeviceLink.java     byte stream abstraction (RFCOMM socket or the simulator pipes)
+  services/SimulatorLink.java  in-process link to logic/DeviceSimulator (debug-only entry point)
   views/GraphCanvasView.java   custom View
 app/src/main/res/              layout/, menu/, drawable/, values/, values-night/, xml/
 ```
@@ -83,6 +87,14 @@ app/src/main/res/              layout/, menu/, drawable/, values/, values-night/
 - `androidx.recyclerview` is not declared explicitly in `app/build.gradle.kts`; it arrives transitively. Add it to `libs.versions.toml` before using it.
 - `lintDebug` can report a stale manifest error from cached analysis; rerun with `--rerun-tasks` before chasing it.
 - `BluetoothAdapter.getDefaultAdapter()` is deprecated but in use.
+- Debug builds add a "Simulated dropController (debug)" entry to the Settings device list
+  (`BluetoothHelper.connectSimulator()`, `SimulatorLink`, `logic/DeviceSimulator`). It works on an emulator and
+  without hardware; the real RFCOMM path (`RfcommLink`, `connect(BluetoothDevice)`) must stay unchanged.
+- Every message sent or received by `BluetoothHelper` is recorded in `logic/ProtocolLog` and shown by the debug-only
+  "Protocol log (debug)" overflow item (`MainActivity.showProtocolLog()`). The same messages are appended to
+  `logic/ProtocolFileLog` (`files/logs/protocol.log`, 200 KB limit) in every build; the About tab button opens that
+  file and shares it through the `.fileprovider` FileProvider. Keep the log classes Android-free so they stay
+  JVM-testable, and post listener callbacks to the main thread in the UI.
 - Several files have uncommitted work in progress; check `git status` and do not revert changes you did not make.
 
 ## Code Style Guidelines

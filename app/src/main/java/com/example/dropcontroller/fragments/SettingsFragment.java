@@ -480,15 +480,23 @@ public class SettingsFragment extends Fragment {
         }
 
         Set<BluetoothDevice> pairedDevices = bluetoothHelper.getPairedDevices();
-        if (pairedDevices.isEmpty()) {
+        boolean simulatorAvailable = app.isDebuggable();
+        if (pairedDevices.isEmpty() && !simulatorAvailable) {
             Toast.makeText(requireContext(), R.string.bt_no_paired_devices, Toast.LENGTH_LONG).show();
             return;
         }
 
-        final List<BluetoothDevice> deviceList = new ArrayList<>(pairedDevices);
+        final List<DeviceEntry> deviceList = new ArrayList<>();
+        for (BluetoothDevice device : pairedDevices) {
+            deviceList.add(new DeviceEntry(device, bluetoothHelper.getDeviceLabel(device)));
+        }
+        if (simulatorAvailable) {
+            // Debug builds: test the app without a dropController or a Bluetooth adapter
+            deviceList.add(new DeviceEntry(null, getString(R.string.bt_simulated_device)));
+        }
         final List<String> deviceLabels = new ArrayList<>();
-        for (BluetoothDevice device : deviceList) {
-            deviceLabels.add(bluetoothHelper.getDeviceLabel(device));
+        for (DeviceEntry entry : deviceList) {
+            deviceLabels.add(entry.getLabel());
         }
 
         ArrayAdapter<String> adapter =
@@ -498,8 +506,42 @@ public class SettingsFragment extends Fragment {
         dialog = new MaterialAlertDialogBuilder(requireContext())
                 .setTitle(R.string.bt_select_device)
                 // Runs when a device is selected (Analogous to ListPicker.AfterPicking)
-                .setAdapter(adapter, (dialog, which) -> bluetoothHelper.connect(deviceList.get(which)))
+                .setAdapter(adapter, (dialog, which) -> {
+                    DeviceEntry entry = deviceList.get(which);
+                    BluetoothDevice device = entry.getDevice();
+                    if (device != null) {
+                        bluetoothHelper.connect(device);
+                    } else {
+                        bluetoothHelper.connectSimulator();
+                    }
+                })
                 .setNegativeButton(R.string.bt_cancel, (dialog, which) -> dialog.dismiss())
                 .show();
+    }
+
+    /** One row of the device picker: a paired Bluetooth device or, in debug builds, the simulator. */
+    private static final class DeviceEntry {
+
+        @Nullable
+        private final BluetoothDevice device;
+
+        @NonNull
+        private final String label;
+
+        private DeviceEntry(@Nullable BluetoothDevice device, @NonNull String label) {
+            this.device = device;
+            this.label = label;
+        }
+
+        @NonNull
+        private String getLabel() {
+            return label;
+        }
+
+        /** @return the paired device, or {@code null} for the simulator entry */
+        @Nullable
+        private BluetoothDevice getDevice() {
+            return device;
+        }
     }
 }

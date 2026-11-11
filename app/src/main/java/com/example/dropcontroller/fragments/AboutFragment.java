@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -13,6 +14,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.example.dropcontroller.DropControllerApp;
+import com.example.dropcontroller.MainActivity;
 import com.example.dropcontroller.R;
 import com.example.dropcontroller.services.BluetoothHelper;
 import com.example.dropcontroller.services.DeviceSession;
@@ -50,6 +52,15 @@ public class AboutFragment extends Fragment {
         TextView appVersionView = view.findViewById(R.id.tv_app_version);
         appVersionView.setText(getString(R.string.about_app_version, getAppVersion()));
         firmwareView = view.findViewById(R.id.tv_firmware_version);
+
+        Button communicationLogButton = view.findViewById(R.id.btn_communication_log);
+        if (requireActivity() instanceof MainActivity) {
+            MainActivity mainActivity = (MainActivity) requireActivity();
+            communicationLogButton.setOnClickListener(v -> mainActivity.showCommunicationLog());
+        } else {
+            // The log dialog lives in MainActivity; another host cannot show it
+            communicationLogButton.setVisibility(View.GONE);
+        }
         return view;
     }
 

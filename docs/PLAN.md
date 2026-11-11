@@ -15,6 +15,8 @@ Status legend: `[ ]` todo, `[x]` done.
 - Stages 9 and 10 are implemented (code, unit tests, build and lint pass). Left: the manual pass on a device for
   stage 9 (rotation, dark mode, 5+ presets) and stage 10 (export, move the file, import on a clean install, import twice).
   Ideas and open questions are collected in `docs/NOTES.md`.
+- Stage 11 (device simulator for testing without hardware) is implemented; only the manual pass on an emulator is left.
+  Follow-up review findings are tracked in `docs/REVIEW.md`.
 
 ## Decisions
 - Language stays Java 11.
@@ -296,6 +298,39 @@ Open questions (to collect in `docs/NOTES.md` when the stages start):
 - The duplicate check compares all nine drops, also the hidden ones (beyond the number of drops).
 - Should a preset also be loadable from the Loop Page? Proposed: no.
 - Sharing presets between phones works by moving the JSON file; there is no built-in share button.
+
+## Stage 11. Testing without hardware (device simulator)
+Goal: check the app on an emulator or without a dropController, without changing the wire protocol or the release
+behavior. The Android emulator has no Bluetooth Classic adapter, so a simulated device is used instead of a real
+socket.
+
+Decisions:
+- The firmware is modelled in plain Java (`logic/DeviceSimulator`), not in the app's Bluetooth code, so it can be
+  unit tested on the JVM and reused by an in-process link.
+- `BluetoothHelper` talks to a `DeviceLink` (input/output streams). The real path is still the RFCOMM socket
+  (`RfcommLink`); `SimulatorLink` connects the same read/write threads to the simulator through pipes.
+- The simulator is offered only in debug builds (`ApplicationInfo.FLAG_DEBUGGABLE`), as an extra entry in the
+  Settings device list. Release builds and the real connection are unchanged.
+- The simulator copies the firmware checks (`dropDataIsOK`), answers `[HELLO]`, `[VERSION]`, `[AYT]` and drain
+  commands, and sends `[FTS]` after the latest STOP time (immediately after rejected data).
+
+Steps:
+- [x] 11.1 `logic/DeviceSimulator`: parse the app's messages, track valves, validate and time a sequence.
+- [x] 11.2 `DeviceSimulatorTest`: hello/version/AYT, drain, accepted sequence and its finish delay, flash and
+      Bulb camera timing, rejected data (missing trigger, wrong drop count), chunked and noisy input, reset.
+      `SimulatorLinkTest`: the pipes and the scheduled `[FTS]`.
+- [x] 11.3 `services/DeviceLink` + `SimulatorLink` (pipes and the `[FTS]` schedule); `BluetoothHelper` uses the
+      link for the real socket too (`RfcommLink`) and exposes `connectSimulator()`.
+- [x] 11.4 Settings: "Simulated dropController (debug)" in the device list, debug builds only
+      (`isSimulatorAvailable()`), string in `strings.xml`.
+- [x] 11.5 `./gradlew assembleDebug lintDebug testDebugUnitTest` passes.
+- [ ] 11.6 Manual pass on an emulator: connect to the simulated device, About shows the firmware version,
+      Single Sequence START -> ACTIVE -> START, Loop Mode TIMER and BUTTON, STOP/RESET, Drain.
+- [x] 11.7 `logic/ProtocolLog` (ring buffer, JVM-tested) records every message sent and received by
+      `BluetoothHelper`; a debug-only overflow item "Protocol log (debug)" shows it live with Clear/Close.
+- [x] 11.8 `logic/ProtocolFileLog` appends every message to `files/logs/protocol.log` and keeps the file under
+      200 KB by dropping the oldest lines. The About tab button "Communication log" shows it in every build,
+      with Share (through `FileProvider`) and Clear.
 
 ## Out of scope
 - Drop data validation (the original app has none).

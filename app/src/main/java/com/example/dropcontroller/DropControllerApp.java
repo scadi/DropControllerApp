@@ -1,6 +1,7 @@
 package com.example.dropcontroller;
 
 import android.app.Application;
+import android.content.pm.ApplicationInfo;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatDelegate;
@@ -80,6 +81,13 @@ public class DropControllerApp extends Application {
     @NonNull
     public SoundPlayer getSoundPlayer() {
         return soundPlayer;
+    }
+
+    /**
+     * @return true for debug builds; the device simulator and the debug protocol log are hidden in release builds
+     */
+    public boolean isDebuggable() {
+        return (getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
     }
 
     public void saveSettings() {
