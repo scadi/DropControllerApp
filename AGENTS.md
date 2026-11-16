@@ -67,6 +67,7 @@ Unit tests for the model, storage and `logic/` classes live in `src/test` (JUnit
 app/src/main/java/com/example/dropcontroller/
   DropControllerApp.java       Application: shared settings, drop data, BluetoothHelper, save/reset
   MainActivity.java            splash, bottom nav, BT runtime permissions
+  LogDialogs.java              protocol log (debug) and communication log dialogs, opened through MainActivity
   config/AppPreferences.java   SharedPreferences wrapper (KeyValueStore)
   config/StateStorage.java     saves/loads AppSettings and SequenceData
   data/*.java                  models: AppSettings, SequenceData, DropData, triggers, deltas, Limits
@@ -92,7 +93,7 @@ app/src/main/res/              layout/, menu/, drawable/, values/, values-night/
   without hardware; the real RFCOMM path (`RfcommLink`, `connect(BluetoothDevice)`) must stay unchanged.
   `connectSimulator()` does nothing unless `BluetoothHelper` was created with `simulatorAllowed` (debug builds).
 - Every message sent or received by `BluetoothHelper` is recorded in `logic/ProtocolLog` and shown by the debug-only
-  "Protocol log (debug)" overflow item (`MainActivity.showProtocolLog()`). The same messages, plus connection events
+  "Protocol log (debug)" overflow item (`LogDialogs.showProtocolLog()`). The same messages, plus connection events
   (`# connected`, `# connection lost`, ...), are appended to `logic/ProtocolFileLog` (`files/logs/protocol.log`,
   200 KB limit) in every build, from a dedicated executor so the Bluetooth threads never wait for the disk; the
   About tab button opens that file and shares it through the `.fileprovider` FileProvider. Keep the log classes

@@ -128,9 +128,13 @@ these changes.
       and `connectSimulator()` returns without connecting when it is false.*
 - [x] **S6. Small cleanups.** `ProtocolFileLog.readAll()` now reuses `readBytes()`; the `append()` locking
       requirement is documented.
-- [ ] **S7. Not done, for a later change:** move the log dialogs out of `MainActivity` into their own class, and
-      add an Espresso check that the dialogs are actually shown (`LogDialogsSmokeTest` only checks that the
-      activity survives).
+- [x] **S7. Move the log dialogs out of `MainActivity` and test that they are shown.** `MainActivity` had grown by
+      about 200 lines of dialog code, and `LogDialogsSmokeTest` only checked that the activity survives.
+      *Fixed: the dialogs, their scroll and height handling, the background file I/O and the share intent live in
+      `LogDialogs` (created by `MainActivity`, released in `onDestroy()`; `MainActivity.showProtocolLog()` and
+      `showCommunicationLog()` only delegate). `LogDialogsSmokeTest` now asserts `isCommunicationLogShowing()` /
+      `isProtocolLogShowing()`, that a second open request does not stack a dialog, and that `release()` dismisses
+      both. These instrumented tests compile but have not been run: no device or emulator was available.*
 
 ## Already verified during the review
 
