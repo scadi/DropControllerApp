@@ -49,7 +49,7 @@ public class MainActivity extends AppCompatActivity implements NavigationBarView
     private MaterialToolbar toolbar;
     private BottomNavigationView bottomNavigationView;
     private static final String STATE_MAIN_SHOWN = "main_shown";
-    private final int REQUEST_BLUETOOTH_PERMISSIONS = 100; // Constant request code
+    private static final int REQUEST_BLUETOOTH_PERMISSIONS = 100; // Constant request code
 
     private BluetoothHelper bluetoothHelper;
     private LogDialogs logDialogs;
@@ -80,7 +80,6 @@ public class MainActivity extends AppCompatActivity implements NavigationBarView
             toolbar.getMenu().removeItem(R.id.action_protocol_log);
         }
         toolbar.setOnMenuItemClickListener(this::onToolbarMenuItemSelected);
-
 
         // 2. Splash screen button click listener
         splashButton.setOnClickListener(v -> {
@@ -352,15 +351,13 @@ public class MainActivity extends AppCompatActivity implements NavigationBarView
                     permissionsToRequest.toArray(new String[0]),
                     REQUEST_BLUETOOTH_PERMISSIONS
             );
-        } else {
-            // Permissions are already granted, proceed with Bluetooth operations
-            // This is where you might enable the splash screen button or start the app logic
         }
     }
 
     // Callback method for the result of the permission request
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == REQUEST_BLUETOOTH_PERMISSIONS) {
             boolean allGranted = true;

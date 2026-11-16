@@ -12,7 +12,7 @@ public class Preset {
     public static final int NO_ID = -1;
 
     private final int id;
-    private String name;
+    private final String name;
     private final AppSettings settings = new AppSettings();
     private final SequenceData sequence = new SequenceData();
 
@@ -30,10 +30,6 @@ public class Preset {
     @NonNull
     public String getName() {
         return name;
-    }
-
-    public void setName(@NonNull String name) {
-        this.name = name;
     }
 
     @NonNull

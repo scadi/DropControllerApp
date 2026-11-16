@@ -74,8 +74,8 @@ public class GraphCanvasView extends View {
         flashColor = ContextCompat.getColor(getContext(), R.color.graph_flash);
         cameraColor = ContextCompat.getColor(getContext(), R.color.graph_camera);
 
-        @ColorInt int axisColor = MaterialColors.getColor(this, com.google.android.material.R.attr.colorOnSurfaceVariant,
-                Color.DKGRAY);
+        @ColorInt int axisColor = MaterialColors.getColor(this,
+                com.google.android.material.R.attr.colorOnSurfaceVariant, Color.DKGRAY);
         @ColorInt int textColor = MaterialColors.getColor(this, com.google.android.material.R.attr.colorOnSurface,
                 Color.DKGRAY);
         @ColorInt int gridColor = MaterialColors.getColor(this, com.google.android.material.R.attr.colorOutlineVariant,

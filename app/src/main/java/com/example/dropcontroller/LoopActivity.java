@@ -11,6 +11,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.dropcontroller.data.AppSettings;
@@ -120,7 +121,7 @@ public class LoopActivity extends AppCompatActivity {
         }
 
         @Override
-        public void onError(int messageResId) {
+        public void onError(@StringRes int messageResId) {
             Toast.makeText(LoopActivity.this, messageResId, Toast.LENGTH_LONG).show();
         }
     };
@@ -199,7 +200,8 @@ public class LoopActivity extends AppCompatActivity {
         } else if (camera.isBulb()) {
             triggers.append(getString(R.string.loop_camera_bulb));
         } else {
-            triggers.append(getString(R.string.loop_camera_on, camera.getTime(), DeltaFormat.format(camera.getDelta())));
+            triggers.append(getString(R.string.loop_camera_on, camera.getTime(),
+                    DeltaFormat.format(camera.getDelta())));
         }
 
         for (int i = 0; i < SequenceData.FLASH_COUNT; i++) {
