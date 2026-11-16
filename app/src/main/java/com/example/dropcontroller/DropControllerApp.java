@@ -4,6 +4,8 @@ import android.app.Application;
 import android.content.pm.ApplicationInfo;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import androidx.appcompat.app.AppCompatDelegate;
 
 import com.example.dropcontroller.config.AppPreferences;
@@ -97,6 +99,19 @@ public class DropControllerApp extends Application {
     public void saveSequence() {
         storage.saveSequence(sequence);
     }
+
+    /**
+     * @return the address of the device picked in the Settings device list last, or {@code null}
+     */
+    @Nullable
+    public String getLastDevice() {
+        return storage.loadLastDevice();
+    }
+
+    public void setLastDevice(@NonNull String address) {
+        storage.saveLastDevice(address);
+    }
+
 
     /**
      * Applies the saved theme mode to the whole app. Open activities are recreated when the mode changes.

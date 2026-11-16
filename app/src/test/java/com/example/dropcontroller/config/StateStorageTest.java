@@ -117,4 +117,14 @@ public class StateStorageTest {
         assertEquals(9999, data.getDrop(0).getStartTime());
         assertEquals(DeltaDirection.INC, data.getDrop(0).getStartDelta().getDirection());
     }
+
+    @Test
+    public void lastDevice_isNullUntilSaved_thenRoundTrips() {
+        StateStorage storage = new StateStorage(new MapStore());
+        assertNull(storage.loadLastDevice());
+
+        storage.saveLastDevice("00:11:22:33:44:55");
+
+        assertEquals("00:11:22:33:44:55", storage.loadLastDevice());
+    }
 }
