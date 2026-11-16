@@ -24,7 +24,6 @@ import com.example.dropcontroller.logic.DeviceSimulator;
 import com.example.dropcontroller.logic.MessageFramer;
 import com.example.dropcontroller.logic.ProtocolEncoder;
 import com.example.dropcontroller.logic.ProtocolFileLog;
-import com.example.dropcontroller.logic.ProtocolLog;
 
 import java.io.File;
 import java.io.IOException;
@@ -76,7 +75,6 @@ public class BluetoothHelper {
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();
     private final ExecutorService writeExecutor = Executors.newSingleThreadExecutor();
-    private final ProtocolLog protocolLog = new ProtocolLog();
     private final ProtocolFileLog protocolFileLog;
     // File writes (and the occasional trim of the log file) must not delay the Bluetooth read and write threads;
     // a single thread keeps the entries in the order they were recorded
@@ -127,15 +125,8 @@ public class BluetoothHelper {
     }
 
     /**
-     * @return the log of the messages sent to and received from the device (debug protocol check)
-     */
-    @NonNull
-    public ProtocolLog getProtocolLog() {
-        return protocolLog;
-    }
-
-    /**
-     * @return the file log of the messages sent to and received from the device (survives an app restart)
+     * @return the log of the messages sent to and received from the device and of the connection events
+     * (a file, so it survives an app restart)
      */
     @NonNull
     public ProtocolFileLog getProtocolFileLog() {
@@ -473,18 +464,15 @@ public class BluetoothHelper {
     // ----------------------------------------------------
 
     private void recordSent(@NonNull String message) {
-        protocolLog.sent(message);
         long now = System.currentTimeMillis();
         writeToFileLog(() -> protocolFileLog.sent(message, now));
     }
 
     private void recordReceived(@NonNull String payload) {
-        protocolLog.received(payload);
         long now = System.currentTimeMillis();
         writeToFileLog(() -> protocolFileLog.received(payload, now));
     }
 
-    // Connection events only go to the file log: the in-memory log is a view of the messages
     private void recordEvent(@NonNull String description) {
         long now = System.currentTimeMillis();
         writeToFileLog(() -> protocolFileLog.event(description, now));

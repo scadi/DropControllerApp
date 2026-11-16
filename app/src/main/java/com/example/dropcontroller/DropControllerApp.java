@@ -84,7 +84,7 @@ public class DropControllerApp extends Application {
     }
 
     /**
-     * @return true for debug builds; the device simulator and the debug protocol log are hidden in release builds
+     * @return true for debug builds; the device simulator is hidden in release builds
      */
     public boolean isDebuggable() {
         return (getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;

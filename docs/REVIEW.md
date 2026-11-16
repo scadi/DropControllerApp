@@ -141,12 +141,31 @@ these changes.
       `isProtocolLogShowing()`, that a second open request does not stack a dialog, and that `release()` dismisses
       both. These instrumented tests compile but have not been run: no device or emulator was available.*
 
+## Third review (one log instead of two)
+
+The in-memory `ProtocolLog` and the file log recorded the same messages, and the file log also had the connection
+events, Share and a release-build entry point. Only the live update of the debug dialog was missing in the file log.
+
+- [x] **T1. Remove the duplicate `ProtocolLog`.** Deleted `logic/ProtocolLog`, `ProtocolLogTest`, the debug overflow
+      item `action_protocol_log` (and `MainActivity.showProtocolLog()`, `LogDialogs.showProtocolLog()`,
+      `isProtocolLogShowing()`), the strings `protocol_log_title` / `protocol_log_empty` and
+      `BluetoothHelper.getProtocolLog()`. The layout `dialog_protocol_log` became `dialog_communication_log`.
+- [x] **T2. Live update of the communication log.** `ProtocolFileLog.Listener` is called after each appended entry
+      and after `clear()`, on the writing thread and outside the lock; a throwing listener is ignored. The dialog
+      registers it while it is open and reloads the file at most every 300 ms. A reload is skipped while text is
+      selected, and the view follows the end only if it was at the bottom. Covered by
+      `ProtocolFileLogTest.listener_*`, `removedListener_isNotCalled` and `throwingListener_*`.
+- [x] **T3. Documentation.** `AGENTS.md`, `docs/NOTES.md` and `docs/PLAN.md` describe the single log. The items
+      above that name `ProtocolLog` (M2, L3, L9) and the S7 text describe the state at that time.
+      `LogDialogsSmokeTest` lost the protocol log cases and gained one for a new entry while the dialog is open;
+      it compiles but has not been run (no device or emulator).
+
 ## Already verified during the review
 
 - [x] The file-log rotation edge case where the trim boundary lands on the last newline (the file became empty)
       is fixed and covered by `ProtocolFileLogTest.rotation_keepsTheLastLineWhenItIsLargerThanTheLimit`.
 - [x] The real RFCOMM path (`RfcommLink`, `BluetoothHelper.connect(BluetoothDevice)`) is unchanged.
-- [x] The simulator entry and the in-memory protocol log are debug-only; the file log and the About button work
-      in release builds as requested.
+- [x] The simulator entry is debug-only; the file log and the About button work in release builds as requested.
+      (The in-memory protocol log that was debug-only too was removed in the third review.)
 - [x] The communication log is shared through the `.fileprovider` `FileProvider`, so no storage permission is
       needed.

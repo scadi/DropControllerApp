@@ -67,12 +67,12 @@ Unit tests for the model, storage and `logic/` classes live in `src/test` (JUnit
 app/src/main/java/com/example/dropcontroller/
   DropControllerApp.java       Application: shared settings, drop data, BluetoothHelper, save/reset
   MainActivity.java            splash, bottom nav, BT runtime permissions
-  LogDialogs.java              protocol log (debug) and communication log dialogs, opened through MainActivity
+  LogDialogs.java              communication log dialog (live), opened through MainActivity
   config/AppPreferences.java   SharedPreferences wrapper (KeyValueStore)
   config/StateStorage.java     saves/loads AppSettings and SequenceData
   data/*.java                  models: AppSettings, SequenceData, DropData, triggers, deltas, Limits
   logic/*.java                 plain Java (no Android): protocol encoder/framer, timing, loop state machine,
-                               device simulator for testing without hardware, protocol logs
+                               device simulator for testing without hardware, communication log file
   fragments/*Fragment.java     About, Drain, Drops, Graph, Settings
   services/BluetoothHelper.java Bluetooth connect/send/receive, listener callbacks on the main thread
   services/DeviceLink.java     byte stream abstraction (RFCOMM socket or the simulator pipes)
@@ -92,12 +92,14 @@ app/src/main/res/              layout/, menu/, drawable/, values/, values-night/
   (`BluetoothHelper.connectSimulator()`, `SimulatorLink`, `logic/DeviceSimulator`). It works on an emulator and
   without hardware; the real RFCOMM path (`RfcommLink`, `connect(BluetoothDevice)`) must stay unchanged.
   `connectSimulator()` does nothing unless `BluetoothHelper` was created with `simulatorAllowed` (debug builds).
-- Every message sent or received by `BluetoothHelper` is recorded in `logic/ProtocolLog` and shown by the debug-only
-  "Protocol log (debug)" overflow item (`LogDialogs.showProtocolLog()`). The same messages, plus connection events
-  (`# connected`, `# connection lost`, ...), are appended to `logic/ProtocolFileLog` (`files/logs/protocol.log`,
-  200 KB limit) in every build, from a dedicated executor so the Bluetooth threads never wait for the disk; the
-  About tab button opens that file and shares it through the `.fileprovider` FileProvider. Keep the log classes
-  Android-free so they stay JVM-testable, and post listener callbacks to the main thread in the UI.
+- Every message sent or received by `BluetoothHelper`, plus connection events (`# connected`,
+  `# connection lost`, ...), is appended to `logic/ProtocolFileLog` (`files/logs/protocol.log`, 200 KB limit) in
+  every build, from a dedicated executor so the Bluetooth threads never wait for the disk. This is the only log (the
+  old in-memory `ProtocolLog` and its debug menu item were removed as a duplicate). The About tab button opens it in
+  `LogDialogs.showCommunicationLog()`: the dialog registers a `ProtocolFileLog.Listener`, and a change reloads the
+  file at most every 300 ms (skipped while the user selects text; the view follows the end only when it was at the
+  bottom). Share goes through the `.fileprovider` FileProvider. Keep the log class Android-free so it stays
+  JVM-testable; its listeners run on the file log thread, so the UI must hop to the main thread.
 - Several files have uncommitted work in progress; check `git status` and do not revert changes you did not make.
 
 ## Code Style Guidelines

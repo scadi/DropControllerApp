@@ -76,10 +76,6 @@ public class MainActivity extends AppCompatActivity implements NavigationBarView
         logDialogs = new LogDialogs(this, bluetoothHelper);
 
         toolbar.inflateMenu(R.menu.top_app_bar_menu);
-        if (!((DropControllerApp) getApplication()).isDebuggable()) {
-            toolbar.getMenu().removeItem(R.id.action_protocol_log);
-        }
-        toolbar.setOnMenuItemClickListener(this::onToolbarMenuItemSelected);
 
         // 2. Splash screen button click listener
         splashButton.setOnClickListener(v -> {
@@ -161,20 +157,6 @@ public class MainActivity extends AppCompatActivity implements NavigationBarView
                 item.setIcon(icon);
             }
         }
-    }
-
-    // Debug-only overflow item: shows the messages exchanged with the device
-    private boolean onToolbarMenuItemSelected(@NonNull MenuItem item) {
-        if (item.getItemId() == R.id.action_protocol_log) {
-            showProtocolLog();
-            return true;
-        }
-        return false;
-    }
-
-    /** Shows the live protocol log (debug builds); see {@link LogDialogs#showProtocolLog()}. */
-    public void showProtocolLog() {
-        logDialogs.showProtocolLog();
     }
 
     /** Shows the persistent communication log; see {@link LogDialogs#showCommunicationLog()}. */

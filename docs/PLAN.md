@@ -326,11 +326,11 @@ Steps:
 - [x] 11.5 `./gradlew assembleDebug lintDebug testDebugUnitTest` passes.
 - [ ] 11.6 Manual pass on an emulator: connect to the simulated device, About shows the firmware version,
       Single Sequence START -> ACTIVE -> START, Loop Mode TIMER and BUTTON, STOP/RESET, Drain.
-- [x] 11.7 `logic/ProtocolLog` (ring buffer, JVM-tested) records every message sent and received by
-      `BluetoothHelper`; a debug-only overflow item "Protocol log (debug)" shows it live with Clear/Close.
+- [x] 11.7 Superseded by 11.8: the in-memory `logic/ProtocolLog` and the debug-only overflow item "Protocol log
+      (debug)" were removed as a duplicate of the file log; its live update moved to the communication log dialog.
 - [x] 11.8 `logic/ProtocolFileLog` appends every message to `files/logs/protocol.log` and keeps the file under
       200 KB by dropping the oldest lines. The About tab button "Communication log" shows it in every build,
-      with Share (through `FileProvider`) and Clear.
+      with Share (through `FileProvider`) and Clear. The dialog updates live through `ProtocolFileLog.Listener`.
 
 ## Out of scope
 - Drop data validation (the original app has none).

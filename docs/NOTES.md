@@ -161,10 +161,8 @@ background for a future change.
 - [ ] The simulated device reports `dC3_AS25006` and `Jan  1 2025`, so the About tab can be checked without hardware.
 - [ ] The simulator is not part of the release behavior: `RfcommLink` and `BluetoothHelper.connect(BluetoothDevice)`
       are unchanged.
-- [ ] `logic/ProtocolLog` keeps the last 200 messages (sent with brackets, received with the brackets added back).
-      `BluetoothHelper` fills it for both the real socket and the simulator; the "Protocol log (debug)" overflow item
-      is debug-only. The dialog refreshes live and can be cleared without closing it.
-- [ ] `logic/ProtocolFileLog` appends the same messages to `files/logs/protocol.log` in every build (release too),
-      with a 200 KB limit that drops the oldest whole lines. The About tab button "Communication log" shows the file
-      and shares it through the `.fileprovider` FileProvider, so no storage permission is needed. The in-memory
-      debug log in the overflow menu is a separate view and is not persisted.
+- [ ] `logic/ProtocolFileLog` appends every message sent and received (the real socket and the simulator) and the
+      connection events to `files/logs/protocol.log` in every build (release too), with a 200 KB limit that drops
+      the oldest whole lines. The About tab button "Communication log" shows the file, updates it while the dialog is
+      open (a reload at most every 300 ms), and shares it through the `.fileprovider` FileProvider, so no storage
+      permission is needed. There is no separate in-memory log any more.

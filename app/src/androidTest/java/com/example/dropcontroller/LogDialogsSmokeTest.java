@@ -10,12 +10,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
- * Regression guard for the two log dialogs on the About tab and in the overflow menu.
+ * Regression guard for the communication log dialog on the About tab.
  * <p>
- * Both used to crash with a {@code NullPointerException} when opened: the dialog content is inflated with a
- * {@code null} root, so its scroll view had no layout params before the dialog was shown. The dialogs do not need
- * a connected device, so these tests open them and check that they are really showing and that the activity
- * survives.
+ * It used to crash with a {@code NullPointerException} when opened: the dialog content is inflated with a
+ * {@code null} root, so its scroll view had no layout params before the dialog was shown. The dialog does not need
+ * a connected device, so these tests open it and check that it is really showing and that the activity survives.
  */
 @RunWith(AndroidJUnit4.class)
 public class LogDialogsSmokeTest {
@@ -27,19 +26,6 @@ public class LogDialogsSmokeTest {
             scenario.onActivity(activity -> {
                 assertFalse(activity.isFinishing());
                 assertTrue(activity.getLogDialogs().isCommunicationLogShowing());
-                assertFalse(activity.getLogDialogs().isProtocolLogShowing());
-            });
-        }
-    }
-
-    @Test
-    public void protocolLogDialog_isShownWithoutCrashing() {
-        try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
-            scenario.onActivity(MainActivity::showProtocolLog);
-            scenario.onActivity(activity -> {
-                assertFalse(activity.isFinishing());
-                assertTrue(activity.getLogDialogs().isProtocolLogShowing());
-                assertFalse(activity.getLogDialogs().isCommunicationLogShowing());
             });
         }
     }
@@ -56,18 +42,31 @@ public class LogDialogsSmokeTest {
     }
 
     @Test
-    public void release_dismissesBothDialogs() {
+    public void release_dismissesTheDialog() {
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
             scenario.onActivity(activity -> {
                 activity.showCommunicationLog();
-                activity.showProtocolLog();
                 assertTrue(activity.getLogDialogs().isCommunicationLogShowing());
-                assertTrue(activity.getLogDialogs().isProtocolLogShowing());
 
                 activity.getLogDialogs().release();
 
                 assertFalse(activity.getLogDialogs().isCommunicationLogShowing());
-                assertFalse(activity.getLogDialogs().isProtocolLogShowing());
+            });
+        }
+    }
+
+    @Test
+    public void newLogEntry_whileTheDialogIsOpen_doesNotCrash() {
+        try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+            scenario.onActivity(activity -> {
+                activity.showCommunicationLog();
+                // Same path as a message from the device: file written, listener told, refresh scheduled
+                ((DropControllerApp) activity.getApplication()).getBluetoothHelper().getProtocolFileLog()
+                        .event("smoke test entry");
+            });
+            scenario.onActivity(activity -> {
+                assertFalse(activity.isFinishing());
+                assertTrue(activity.getLogDialogs().isCommunicationLogShowing());
             });
         }
     }

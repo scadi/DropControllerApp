@@ -10,6 +10,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /** Checks the persistent communication log file. */
 public class ProtocolFileLogTest {
@@ -79,6 +80,76 @@ public class ProtocolFileLogTest {
         for (String line : lines) {
             assertTrue(line, line.startsWith("1999-12-2"));
         }
+    }
+
+    @Test
+    public void listener_isCalledAfterEveryEntryAndAfterClear() throws Exception {
+        ProtocolFileLog log = new ProtocolFileLog(new File(folder.getRoot(), "protocol.log"));
+        AtomicInteger calls = new AtomicInteger();
+        log.addListener(calls::incrementAndGet);
+
+        log.sent("[HELLO]");
+        log.received("HELLO");
+        log.event("connected");
+        assertEquals(3, calls.get());
+
+        log.clear();
+        assertEquals(4, calls.get());
+    }
+
+    @Test
+    public void listener_seesTheEntryAlreadyWritten() throws Exception {
+        ProtocolFileLog log = new ProtocolFileLog(new File(folder.getRoot(), "protocol.log"));
+        String[] seen = new String[1];
+        log.addListener(() -> seen[0] = log.readAll());
+
+        log.sent("[AYT]");
+
+        assertTrue(seen[0].contains("> [AYT]"));
+    }
+
+    @Test
+    public void listener_isNotCalledWhenTheWriteFails() throws Exception {
+        // A directory in place of the file makes the write fail with an IOException
+        ProtocolFileLog log = new ProtocolFileLog(folder.newFolder("protocol.log"));
+        AtomicInteger calls = new AtomicInteger();
+        log.addListener(calls::incrementAndGet);
+
+        assertFalse(log.sent("[HELLO]"));
+
+        assertEquals(0, calls.get());
+    }
+
+    @Test
+    public void removedListener_isNotCalled() throws Exception {
+        ProtocolFileLog log = new ProtocolFileLog(new File(folder.getRoot(), "protocol.log"));
+        AtomicInteger calls = new AtomicInteger();
+        ProtocolFileLog.Listener listener = calls::incrementAndGet;
+        log.addListener(listener);
+        log.addListener(listener);
+
+        log.sent("[A]");
+        assertEquals("The same listener is added only once", 1, calls.get());
+
+        log.removeListener(listener);
+        log.sent("[B]");
+        assertEquals(1, calls.get());
+    }
+
+    @Test
+    public void throwingListener_doesNotBreakTheLogOrOtherListeners() throws Exception {
+        ProtocolFileLog log = new ProtocolFileLog(new File(folder.getRoot(), "protocol.log"));
+        AtomicInteger calls = new AtomicInteger();
+        log.addListener(() -> {
+            throw new IllegalStateException("broken listener");
+        });
+        log.addListener(calls::incrementAndGet);
+
+        assertTrue(log.sent("[HELLO]"));
+        assertTrue(log.received("HELLO"));
+
+        assertEquals(2, calls.get());
+        assertEquals(2, log.readAll().split("\n").length);
     }
 
     @Test

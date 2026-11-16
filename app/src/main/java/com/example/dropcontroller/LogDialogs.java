@@ -2,6 +2,8 @@ package com.example.dropcontroller;
 
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,35 +18,33 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
 
 import com.example.dropcontroller.logic.ProtocolFileLog;
-import com.example.dropcontroller.logic.ProtocolLog;
 import com.example.dropcontroller.services.BluetoothHelper;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.io.File;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 
 /**
- * The two log dialogs of the app: the live in-memory protocol log (debug builds) and the persistent communication
- * log file with Share and Clear (every build). Owned by {@link MainActivity}, which calls {@link #release()} from
+ * The communication log dialog: the persistent log file of the messages exchanged with the device, with Share and
+ * Clear. It updates while it is open. Owned by {@link MainActivity}, which calls {@link #release()} from
  * {@code onDestroy()}.
  */
 public final class LogDialogs {
 
     private static final String TAG = "LogDialogs";
     private static final float MAX_HEIGHT_SHARE = 0.6f;
+    // During a sequence several messages arrive within a few milliseconds; one refresh covers all of them
+    private static final long REFRESH_DELAY_MS = 300;
 
     private final AppCompatActivity activity;
     private final BluetoothHelper bluetoothHelper;
-    @Nullable
-    private AlertDialog protocolLogDialog;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
     @Nullable
     private AlertDialog communicationLogDialog;
+    // True while a refresh is waiting in mainHandler; main thread only
+    private boolean refreshScheduled;
     // The communication log file is read and cleared here, so a slow filesystem does not stall the UI thread
     private final ExecutorService logIoExecutor = Executors.newSingleThreadExecutor();
 
@@ -53,84 +53,39 @@ public final class LogDialogs {
         this.bluetoothHelper = bluetoothHelper;
     }
 
-    public boolean isProtocolLogShowing() {
-        return protocolLogDialog != null && protocolLogDialog.isShowing();
-    }
-
     public boolean isCommunicationLogShowing() {
         return communicationLogDialog != null && communicationLogDialog.isShowing();
     }
 
-    /** Dismisses both dialogs and stops the background executor. Call before the activity is destroyed. */
+    /** Dismisses the dialog and stops the background executor. Call before the activity is destroyed. */
     public void release() {
-        if (protocolLogDialog != null) {
-            protocolLogDialog.dismiss();
-            protocolLogDialog = null;
-        }
         if (communicationLogDialog != null) {
             communicationLogDialog.dismiss();
             communicationLogDialog = null;
         }
+        mainHandler.removeCallbacksAndMessages(null);
+        refreshScheduled = false;
         logIoExecutor.shutdown();
     }
 
     /**
-     * Shows the protocol log in a dialog that updates while it is open. The log is filled by BluetoothHelper, so
-     * it also shows the messages of the built-in simulator. Opened from the debug-only overflow menu item.
-     */
-    public void showProtocolLog() {
-        if (isProtocolLogShowing()) {
-            return;
-        }
-        ProtocolLog protocolLog = bluetoothHelper.getProtocolLog();
-        View content = activity.getLayoutInflater().inflate(R.layout.dialog_protocol_log, null);
-        TextView textView = content.findViewById(R.id.tv_protocol_log);
-        ScrollView scrollView = content.findViewById(R.id.scroll_protocol_log);
-
-        renderProtocolLog(textView, protocolLog);
-        ProtocolLog.Listener listener = () -> activity.runOnUiThread(() -> {
-            boolean wasAtBottom = isScrolledToBottom(scrollView);
-            renderProtocolLog(textView, protocolLog);
-            // Do not fight the user while they read older entries
-            if (wasAtBottom) {
-                scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
-            }
-        });
-
-        AlertDialog dialog = new MaterialAlertDialogBuilder(activity)
-                .setTitle(R.string.protocol_log_title)
-                .setView(content)
-                .setPositiveButton(R.string.log_clear, null)
-                .setNegativeButton(R.string.log_close, null)
-                .create();
-        // Clear keeps the dialog open, so replace the default dismiss listener of the button
-        dialog.setOnShowListener(shown -> dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-                .setOnClickListener(v -> protocolLog.clear()));
-        dialog.setOnDismissListener(dismissed -> {
-            protocolLog.removeListener(listener);
-            protocolLogDialog = null;
-        });
-
-        protocolLog.addListener(listener);
-        protocolLogDialog = dialog;
-        dialog.show();
-        limitHeight(scrollView);
-        scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
-    }
-
-    /**
      * Shows the persistent communication log file with Share and Clear. Opened from the About tab in every build,
-     * so a user can send the file when the controller misbehaves.
+     * so a user can send the file when the controller misbehaves. New entries appear while the dialog is open.
      */
     public void showCommunicationLog() {
         if (isCommunicationLogShowing()) {
             return;
         }
         ProtocolFileLog fileLog = bluetoothHelper.getProtocolFileLog();
-        View content = activity.getLayoutInflater().inflate(R.layout.dialog_protocol_log, null);
-        TextView textView = content.findViewById(R.id.tv_protocol_log);
-        ScrollView scrollView = content.findViewById(R.id.scroll_protocol_log);
-        loadFileLogText(textView, scrollView, fileLog);
+        View content = activity.getLayoutInflater().inflate(R.layout.dialog_communication_log, null);
+        TextView textView = content.findViewById(R.id.tv_communication_log);
+        ScrollView scrollView = content.findViewById(R.id.scroll_communication_log);
+        loadFileLogText(textView, scrollView, fileLog, true);
+
+        // Called on the file log executor thread: only hop to the main thread here
+        ProtocolFileLog.Listener listener =
+                () -> activity.runOnUiThread(() -> scheduleRefresh(textView, scrollView, fileLog));
+        fileLog.addListener(listener);
 
         AlertDialog dialog = new MaterialAlertDialogBuilder(activity)
                 .setTitle(R.string.communication_log_title)
@@ -146,10 +101,31 @@ public final class LogDialogs {
             dialog.getButton(AlertDialog.BUTTON_NEUTRAL)
                     .setOnClickListener(v -> clearFileLog(textView, fileLog));
         });
-        dialog.setOnDismissListener(dismissed -> communicationLogDialog = null);
+        dialog.setOnDismissListener(dismissed -> {
+            fileLog.removeListener(listener);
+            mainHandler.removeCallbacksAndMessages(null);
+            refreshScheduled = false;
+            communicationLogDialog = null;
+        });
         communicationLogDialog = dialog;
         dialog.show();
         limitHeight(scrollView);
+    }
+
+    /** Limits the number of file reads: the first change starts a timer, the changes before it ends are merged. */
+    private void scheduleRefresh(@NonNull TextView textView, @NonNull ScrollView scrollView,
+                                 @NonNull ProtocolFileLog fileLog) {
+        if (refreshScheduled || !isCommunicationLogShowing()) {
+            return;
+        }
+        refreshScheduled = true;
+        mainHandler.postDelayed(() -> {
+            refreshScheduled = false;
+            // Reloading the text would drop a selection the user is making to copy a part of the log
+            if (!textView.hasSelection()) {
+                loadFileLogText(textView, scrollView, fileLog, false);
+            }
+        }, REFRESH_DELAY_MS);
     }
 
     /**
@@ -174,22 +150,30 @@ public final class LogDialogs {
                 || scrollView.getScrollY() + scrollView.getHeight() >= child.getBottom();
     }
 
-    /** Reads the log file in the background and shows it, scrolling to the newest entries. */
+    /**
+     * Reads the log file in the background and shows it.
+     *
+     * @param scrollToEnd true to scroll to the newest entries; otherwise the view only follows the log when it was
+     *                    already at the bottom, so it does not fight the user while they read older entries
+     */
     private void loadFileLogText(@NonNull TextView textView, @NonNull ScrollView scrollView,
-                                 @NonNull ProtocolFileLog fileLog) {
+                                 @NonNull ProtocolFileLog fileLog, boolean scrollToEnd) {
         runInBackground(() -> {
             String text = fileLog.readAll();
             activity.runOnUiThread(() -> {
                 if (activity.isDestroyed()) {
                     return;
                 }
+                boolean follow = scrollToEnd || isScrolledToBottom(scrollView);
                 if (text == null) {
                     textView.setText(R.string.communication_log_read_failed);
                 } else {
                     textView.setText(text.isEmpty()
                             ? activity.getString(R.string.communication_log_empty) : text);
                 }
-                scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
+                if (follow) {
+                    scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
+                }
             });
         });
     }
@@ -233,22 +217,5 @@ public final class LogDialogs {
                 .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         activity.startActivity(Intent.createChooser(intent,
                 activity.getString(R.string.communication_log_share_title)));
-    }
-
-    private void renderProtocolLog(@NonNull TextView textView, @NonNull ProtocolLog protocolLog) {
-        List<ProtocolLog.Entry> entries = protocolLog.getEntries();
-        if (entries.isEmpty()) {
-            textView.setText(R.string.protocol_log_empty);
-            return;
-        }
-        SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault());
-        StringBuilder builder = new StringBuilder();
-        for (ProtocolLog.Entry entry : entries) {
-            builder.append(timeFormat.format(new Date(entry.getTimestampMs())))
-                    .append(entry.isSent() ? "  > " : "  < ")
-                    .append(entry.getMessage())
-                    .append('\n');
-        }
-        textView.setText(builder.toString());
     }
 }
