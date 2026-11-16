@@ -103,7 +103,8 @@ Mark an item `[x]` here when it has been dealt with, and say where.
 - [ ] Graph shows the data of the Drops/Settings tabs (start values); the Loop Page copy is not reflected.
 - [ ] Graph bar colors are hard-coded in `GraphCanvasView`; row labels use the theme text color (dark mode).
 - [ ] Drain closes all valves ([OX]) when the tab is left (`onStop`), so the switches match the device.
-- [ ] About shows `versionName` from the manifest (currently 1.0). The firmware requires app version 30401 or higher
+- [ ] About shows `versionName` from the build (`appVersionName` in `app/build.gradle.kts`, currently 0.9.0;
+      `versionCode` is derived from it). The firmware requires app version 30401 or higher
       (`PROTOCOL.md`); the device does not check it over Bluetooth, so it is not enforced.
 
 ## Sounds (stage 6)

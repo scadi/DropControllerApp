@@ -2,6 +2,12 @@ plugins {
     alias(libs.plugins.android.application)
 }
 
+// Single source of the app version: change only this line. versionCode is derived (major * 10000 + minor * 100 + patch)
+val appVersionName = "0.9.0"
+val appVersionCode = appVersionName.split(".").map { it.toInt() }.let { (major, minor, patch) ->
+    major * 10000 + minor * 100 + patch
+}
+
 android {
     namespace = "com.example.dropcontroller"
     compileSdk {
@@ -12,8 +18,8 @@ android {
         applicationId = "com.scadi.dropcontrollerv3"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
