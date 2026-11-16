@@ -49,6 +49,39 @@ public class ProtocolFileLogTest {
     }
 
     @Test
+    public void event_isWrittenWithAHashMarkBetweenTheMessages() throws Exception {
+        ProtocolFileLog log = new ProtocolFileLog(new File(folder.getRoot(), "protocol.log"));
+
+        assertTrue(log.event("connected"));
+        assertTrue(log.sent("[HELLO]"));
+        assertTrue(log.event("connection lost"));
+
+        String[] lines = log.readAll().split("\n");
+        assertEquals(3, lines.length);
+        assertTrue(lines[0].endsWith(" # connected"));
+        assertTrue(lines[1].endsWith(" > [HELLO]"));
+        assertTrue(lines[2].endsWith(" # connection lost"));
+    }
+
+    @Test
+    public void explicitTimestamp_isUsedInsteadOfTheWriteTime() throws Exception {
+        ProtocolFileLog log = new ProtocolFileLog(new File(folder.getRoot(), "protocol.log"));
+        // Entries are written later by a background thread, so the caller passes the time they happened
+        // 10950 days after the epoch is 1999-12-25 in every time zone (the day cannot shift by 7 days)
+        long timestampMs = 86_400_000L * 10_950;
+
+        assertTrue(log.sent("[AYT]", timestampMs));
+        assertTrue(log.received("YIA", timestampMs));
+        assertTrue(log.event("connected", timestampMs));
+
+        String[] lines = log.readAll().split("\n");
+        assertEquals(3, lines.length);
+        for (String line : lines) {
+            assertTrue(line, line.startsWith("1999-12-2"));
+        }
+    }
+
+    @Test
     public void clear_emptiesTheFileButKeepsItUsable() throws Exception {
         ProtocolFileLog log = new ProtocolFileLog(new File(folder.getRoot(), "protocol.log"));
         log.sent("[HELLO]");

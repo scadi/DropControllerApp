@@ -22,8 +22,9 @@ all pass; all items below are checked off.
       (`targetBytes = maxBytes - maxBytes / 4`), so the rewrite happens once per ~50 KB of new data. Optionally
       move file writes to a dedicated single-thread executor to keep the Bluetooth threads free.
       *Fixed 2026-11-11: `trimIfNeeded()` now trims to `maxBytes - maxBytes / 4`; covered by
-      `ProtocolFileLogTest.rotation_trimsWellBelowTheLimit`. File writes stay on the Bluetooth threads (the trim is
-      now rare, so the extra executor was not worth the ordering complexity).*
+      `ProtocolFileLogTest.rotation_trimsWellBelowTheLimit`. File writes stayed on the Bluetooth threads at that
+      time (the trim is now rare, so the extra executor was not worth the ordering complexity).*
+      *Revisited in the second review (see S3): the writes now run on a dedicated executor.*
 - [x] **M2. Do not let a `ProtocolLog` listener break the connection.** `logic/ProtocolLog.java`
       (`notifyListeners()`): an exception from a listener escapes into `ConnectedThread.run()`, which only catches
       `IOException`, so the read thread ends without `connectionLost()`. In `ConnectedThread.write()` it fails the
@@ -91,12 +92,45 @@ all pass; all items below are checked off.
 
 ## Out of scope (pre-existing, not caused by this change)
 
-- [x] **P1. Remove duplicated Gradle properties.** `gradle.properties` contains the `android.dependency.*` and
-      `android.r8.*` keys twice.
-      *Fixed 2026-11-11: the duplicated block is removed; the build still passes.*
+- [x] **P1. Remove duplicated Gradle properties.** `gradle.properties` contained the `android.dependency.*` and
+      `android.r8.*` keys twice in the working copy.
+      *Resolved: the duplicates never reached the branch (`master` has each key once). The unrelated
+      `org.gradle.configuration-cache=true` and the wrapper `distributionSha256Sum` were reverted from this branch;
+      they belong in a separate change.*
 - [x] **P2. Align the Gradle version documentation.** `AGENTS.md` says Gradle 8.13, while
       `gradle/wrapper/gradle-wrapper.properties` uses 9.6.0.
       *Fixed 2026-11-11: `AGENTS.md` now says Gradle 9.6.0.*
+
+## Second review (branch review before merge)
+
+Verification: `testDebugUnitTest`, `assembleDebug`, `assembleRelease` and `lintDebug` passed before and after
+these changes.
+
+- [x] **S1. Keep per-machine IDE state out of the branch.** `.idea/deploymentTargetSelector.xml` held the serial
+      number of a physical phone, and `.idea/misc.xml` only gained an XML declaration.
+      *Fixed: both files are back to the `master` version and `/.idea/deploymentTargetSelector.xml` is ignored.
+      The tracked copy is removed from the index in the same change.*
+- [x] **S2. Keep unrelated Gradle changes out of this branch.** `org.gradle.configuration-cache=true` and
+      `distributionSha256Sum` do not belong to the debugging and logging work.
+      *Fixed: reverted from this branch; propose them separately.*
+- [x] **S3. Do not write the file log on the Bluetooth threads.** `BluetoothHelper.recordSent()` and
+      `recordReceived()` wrote the file synchronously on the read thread and the write executor.
+      *Fixed: `BluetoothHelper` has a single-thread `fileLogExecutor`; the timestamp is taken when the message is
+      recorded and passed to `ProtocolFileLog.sent/received(..., timestampMs)`, so the order and the times stay
+      correct.*
+- [x] **S4. Log connection events and failed writes.** The file showed only messages, so a shared log did not
+      say when a connection opened, failed or was lost.
+      *Fixed: `ProtocolFileLog.event()` writes `# ...` lines for connect, connection failed, connection lost,
+      disconnect by the app and a failed write. Covered by `ProtocolFileLogTest.event_*`.*
+- [x] **S5. Make `connectSimulator()` safe in release builds.** The method was public and guarded only by the
+      hidden Settings entry.
+      *Fixed: `BluetoothHelper(Context, boolean simulatorAllowed)`; `DropControllerApp` passes `isDebuggable()`
+      and `connectSimulator()` returns without connecting when it is false.*
+- [x] **S6. Small cleanups.** `ProtocolFileLog.readAll()` now reuses `readBytes()`; the `append()` locking
+      requirement is documented.
+- [ ] **S7. Not done, for a later change:** move the log dialogs out of `MainActivity` into their own class, and
+      add an Espresso check that the dialogs are actually shown (`LogDialogsSmokeTest` only checks that the
+      activity survives).
 
 ## Already verified during the review
 

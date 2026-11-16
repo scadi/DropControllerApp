@@ -44,12 +44,35 @@ public final class ProtocolFileLog {
 
     /** Records one message written to the device, for example {@code [D01...]}. */
     public synchronized boolean sent(@NonNull String wireMessage) {
-        return append("> " + wireMessage);
+        return sent(wireMessage, System.currentTimeMillis());
+    }
+
+    /** Same as {@link #sent(String)} with the time the message was written, for entries recorded later. */
+    public synchronized boolean sent(@NonNull String wireMessage, long timestampMs) {
+        return append("> " + wireMessage, timestampMs);
     }
 
     /** Records one payload received from the device (without brackets); the brackets are added back. */
     public synchronized boolean received(@NonNull String payload) {
-        return append("< [" + payload + "]");
+        return received(payload, System.currentTimeMillis());
+    }
+
+    /** Same as {@link #received(String)} with the time the message arrived, for entries recorded later. */
+    public synchronized boolean received(@NonNull String payload, long timestampMs) {
+        return append("< [" + payload + "]", timestampMs);
+    }
+
+    /**
+     * Records a connection event (connect, disconnect, failed write), so a shared log shows what the messages
+     * around it belong to. Event lines start with {@code #}.
+     */
+    public synchronized boolean event(@NonNull String description) {
+        return event(description, System.currentTimeMillis());
+    }
+
+    /** Same as {@link #event(String)} with the time of the event, for entries recorded later. */
+    public synchronized boolean event(@NonNull String description, long timestampMs) {
+        return append("# " + description, timestampMs);
     }
 
     /**
@@ -60,14 +83,8 @@ public final class ProtocolFileLog {
         if (!file.exists()) {
             return "";
         }
-        try (InputStream in = new FileInputStream(file)) {
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            byte[] buffer = new byte[4096];
-            int read;
-            while ((read = in.read(buffer)) > 0) {
-                out.write(buffer, 0, read);
-            }
-            return new String(out.toByteArray(), StandardCharsets.UTF_8);
+        try {
+            return new String(readBytes(), StandardCharsets.UTF_8);
         } catch (IOException e) {
             return null;
         }
@@ -91,8 +108,9 @@ public final class ProtocolFileLog {
         return maxBytes;
     }
 
-    private boolean append(@NonNull String line) {
-        String entry = timeFormat.format(new Date()) + " " + line + "\n";
+    // Must be called with "this" locked: it uses the shared SimpleDateFormat and rewrites the file
+    private boolean append(@NonNull String line, long timestampMs) {
+        String entry = timeFormat.format(new Date(timestampMs)) + " " + line + "\n";
         try {
             File parent = file.getParentFile();
             if (parent != null && !parent.exists() && !parent.mkdirs()) {
@@ -115,7 +133,7 @@ public final class ProtocolFileLog {
         }
         byte[] bytes = readBytes();
         // Hysteresis: trimming exactly to maxBytes would rewrite the whole file for every new message once the
-        // limit is reached, which costs a full read and write per message on the Bluetooth threads
+        // limit is reached, which costs a full read and write per message
         int targetBytes = Math.max(1, maxBytes - maxBytes / 4);
         int keepFrom = Math.max(0, bytes.length - targetBytes);
         while (keepFrom < bytes.length && bytes[keepFrom] != '\n') {

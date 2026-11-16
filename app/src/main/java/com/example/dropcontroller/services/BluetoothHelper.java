@@ -78,6 +78,10 @@ public class BluetoothHelper {
     private final ExecutorService writeExecutor = Executors.newSingleThreadExecutor();
     private final ProtocolLog protocolLog = new ProtocolLog();
     private final ProtocolFileLog protocolFileLog;
+    // File writes (and the occasional trim of the log file) must not delay the Bluetooth read and write threads;
+    // a single thread keeps the entries in the order they were recorded
+    private final ExecutorService fileLogExecutor = Executors.newSingleThreadExecutor();
+    private final boolean simulatorAllowed;
 
     private volatile State state = State.DISCONNECTED;
     // Incremented by disconnect() so that queued paced writes of an old connection are abandoned
@@ -87,8 +91,12 @@ public class BluetoothHelper {
     private ConnectThread connectThread;
     private ConnectedThread connectedThread;
 
-    public BluetoothHelper(@NonNull Context context) {
+    /**
+     * @param simulatorAllowed true only for debug builds: {@link #connectSimulator()} does nothing otherwise
+     */
+    public BluetoothHelper(@NonNull Context context, boolean simulatorAllowed) {
         this.appContext = context.getApplicationContext();
+        this.simulatorAllowed = simulatorAllowed;
         this.protocolFileLog = new ProtocolFileLog(
                 new File(appContext.getFilesDir(), "logs/protocol.log"));
         BluetoothManager manager = appContext.getSystemService(BluetoothManager.class);
@@ -201,6 +209,7 @@ public class BluetoothHelper {
             return;
         }
         cancelThreads();
+        recordEvent("connecting to a Bluetooth device");
         setState(State.CONNECTING);
         connectThread = new ConnectThread(device);
         connectThread.start();
@@ -208,10 +217,15 @@ public class BluetoothHelper {
 
     /**
      * Opens an in-process connection to a simulated dropController instead of a Bluetooth device.
-     * Only reachable from the debug-only simulator entry in the Settings tab.
+     * Only reachable from the debug-only simulator entry in the Settings tab; ignored in release builds.
      */
     public synchronized void connectSimulator() {
+        if (!simulatorAllowed) {
+            Log.w(TAG, "The simulator is only available in debug builds");
+            return;
+        }
         cancelThreads();
+        recordEvent("connecting to the simulated device");
         setState(State.CONNECTING);
         connected(null, new SimulatorLink(new DeviceSimulator()));
     }
@@ -225,6 +239,7 @@ public class BluetoothHelper {
         connectedThread = null;
         cancelThreads();
         if (closing != null) {
+            recordEvent("disconnected by the app");
             // Send BYE after any queued writes, then close the socket
             try {
                 writeExecutor.execute(() -> {
@@ -414,6 +429,7 @@ public class BluetoothHelper {
                 recordSent(new String(bytes, StandardCharsets.US_ASCII));
             } catch (IOException e) {
                 Log.w(TAG, "Write failed", e);
+                recordEvent("write failed: " + e.getMessage());
                 notifyError(R.string.bt_send_error);
             }
         }
@@ -456,12 +472,28 @@ public class BluetoothHelper {
 
     private void recordSent(@NonNull String message) {
         protocolLog.sent(message);
-        protocolFileLog.sent(message);
+        long now = System.currentTimeMillis();
+        writeToFileLog(() -> protocolFileLog.sent(message, now));
     }
 
     private void recordReceived(@NonNull String payload) {
         protocolLog.received(payload);
-        protocolFileLog.received(payload);
+        long now = System.currentTimeMillis();
+        writeToFileLog(() -> protocolFileLog.received(payload, now));
+    }
+
+    // Connection events only go to the file log: the in-memory log is a view of the messages
+    private void recordEvent(@NonNull String description) {
+        long now = System.currentTimeMillis();
+        writeToFileLog(() -> protocolFileLog.event(description, now));
+    }
+
+    private void writeToFileLog(@NonNull Runnable write) {
+        try {
+            fileLogExecutor.execute(write);
+        } catch (RejectedExecutionException e) {
+            Log.w(TAG, "File log executor rejected the task", e);
+        }
     }
 
     private synchronized void connected(@Nullable ConnectThread caller, @NonNull DeviceLink link) {
@@ -479,6 +511,7 @@ public class BluetoothHelper {
             thread = new ConnectedThread(link);
         } catch (IOException e) {
             Log.w(TAG, "Failed to get streams", e);
+            recordEvent("connection failed: could not open the streams");
             link.close();
             setState(State.DISCONNECTED);
             notifyError(R.string.bt_connection_failed);
@@ -486,6 +519,7 @@ public class BluetoothHelper {
         }
         connectedThread = thread;
         thread.start();
+        recordEvent("connected");
         setState(State.CONNECTED);
     }
 
@@ -494,6 +528,7 @@ public class BluetoothHelper {
             return;
         }
         connectThread = null;
+        recordEvent("connection failed");
         setState(State.DISCONNECTED);
         notifyError(R.string.bt_connection_failed);
     }
@@ -505,6 +540,7 @@ public class BluetoothHelper {
         connectedThread = null;
         writeGeneration++;
         caller.cancel();
+        recordEvent("connection lost");
         setState(State.DISCONNECTED);
         notifyError(R.string.bt_connection_lost);
     }

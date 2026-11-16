@@ -42,7 +42,7 @@ public class DropControllerApp extends Application {
         storage.loadSettings(settings);
         storage.loadSequence(sequence);
         applyThemeMode();
-        bluetoothHelper = new BluetoothHelper(this);
+        bluetoothHelper = new BluetoothHelper(this, isDebuggable());
         sequenceRunner = new SequenceRunner(bluetoothHelper, settings, sequence);
         deviceSession = new DeviceSession(bluetoothHelper);
         soundPlayer = new SoundPlayer(settings, sequenceRunner);

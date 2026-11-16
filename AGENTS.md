@@ -90,11 +90,13 @@ app/src/main/res/              layout/, menu/, drawable/, values/, values-night/
 - Debug builds add a "Simulated dropController (debug)" entry to the Settings device list
   (`BluetoothHelper.connectSimulator()`, `SimulatorLink`, `logic/DeviceSimulator`). It works on an emulator and
   without hardware; the real RFCOMM path (`RfcommLink`, `connect(BluetoothDevice)`) must stay unchanged.
+  `connectSimulator()` does nothing unless `BluetoothHelper` was created with `simulatorAllowed` (debug builds).
 - Every message sent or received by `BluetoothHelper` is recorded in `logic/ProtocolLog` and shown by the debug-only
-  "Protocol log (debug)" overflow item (`MainActivity.showProtocolLog()`). The same messages are appended to
-  `logic/ProtocolFileLog` (`files/logs/protocol.log`, 200 KB limit) in every build; the About tab button opens that
-  file and shares it through the `.fileprovider` FileProvider. Keep the log classes Android-free so they stay
-  JVM-testable, and post listener callbacks to the main thread in the UI.
+  "Protocol log (debug)" overflow item (`MainActivity.showProtocolLog()`). The same messages, plus connection events
+  (`# connected`, `# connection lost`, ...), are appended to `logic/ProtocolFileLog` (`files/logs/protocol.log`,
+  200 KB limit) in every build, from a dedicated executor so the Bluetooth threads never wait for the disk; the
+  About tab button opens that file and shares it through the `.fileprovider` FileProvider. Keep the log classes
+  Android-free so they stay JVM-testable, and post listener callbacks to the main thread in the UI.
 - Several files have uncommitted work in progress; check `git status` and do not revert changes you did not make.
 
 ## Code Style Guidelines
