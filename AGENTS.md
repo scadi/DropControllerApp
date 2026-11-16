@@ -10,14 +10,16 @@ Guidance for agentic coding agents working in this repository.
 ## Project Overview
 - Native Android app written in **Java** (source/target 11, no Kotlin). Single Gradle module `:app`, root project `DropControllerApp`.
 - Controls a "drop" device over Bluetooth Classic (SPP/RFCOMM, HC-05/Arduino style). Logic was ported from an MIT App Inventor project; comments refer to "TinyDB", "ListPicker", "Clock_LoopDelayTimer", "BluetoothClient1".
-- Package / applicationId: `com.example.dropcontroller`. `minSdk` 24, `compileSdk`/`targetSdk` 36.
+- Package / applicationId: the Java package and `namespace` are `com.example.dropcontroller`; the `applicationId` is `com.scadi.dropcontrollerv3`. `minSdk` 24, `compileSdk`/`targetSdk` 36.
 - UI is View-based (XML layouts, `findViewById`). No Compose, no ViewBinding, no DI framework, no ViewModel/LiveData.
-- Build uses Gradle Kotlin DSL (`*.kts`) and a version catalog at `gradle/libs.versions.toml`. Gradle 8.13, AGP 8.13.1. JDK 21 (JBR) is used locally.
+- Build uses Gradle Kotlin DSL (`*.kts`) and a version catalog at `gradle/libs.versions.toml`. Gradle 9.6.0,
+  AGP 8.13.1. JDK 21 (JBR) is used locally.
 - No Cursor rules, Copilot instructions, or `.editorconfig` exist. No checkstyle/spotless/PMD configured.
 
 ## Product Context (dropController V3 Android app)
 This project is a rewrite of the original App Inventor 2 app (Play Store id `appinventor.ai_m_currey.dropController`) into a maintainable native app. The behavior of the original app is the reference; do not invent new behavior. Docs: https://www.dropcontroller.com/android-app-getting-started/ and https://www.dropcontroller.com/android-app/.
 
+- **Permission**: Martyn Currey (author of the dropController) agreed to the app name, the dC icon, the included firmware and a Google Play release from our own account. The app name must contain "V3" (the V4 controller is a different device and does not work with this app). Never reuse his Play Store id. Do not edit the firmware files in `firmware/`. App code is MIT (`LICENSE`); the firmware is his. Status in `docs/PLAN.md` Stage 12.
 - **Device**: dropController V3 (Arduino + HC-06 module), water drop photography. Bluetooth Classic, device is paired in system settings first (PIN `1234`), then picked from the paired-devices list in the app (Settings tab, NOT-CONNECTED / CONNECTED button).
 - **Tabs**: Drops, Settings, Drain, Graph, About (About shows app version and, once connected, device firmware version).
 - **Settings**: number of drops (1-9), Loop Mode (OFF/ON, delay method TIMER/BUTTON, wait time in seconds), trigger pulse times (ms, default 50), camera/flash trigger enable switches, sounds on/off, theme SYSTEM/LIGHT/DARK (a device preference like sounds: not part of a preset, kept by RESET), RESET (asks for confirmation, then restores all settings and drop data to defaults).
@@ -66,12 +68,16 @@ Unit tests for the model, storage and `logic/` classes live in `src/test` (JUnit
 app/src/main/java/com/example/dropcontroller/
   DropControllerApp.java       Application: shared settings, drop data, BluetoothHelper, save/reset
   MainActivity.java            splash, bottom nav, BT runtime permissions
+  LogDialogs.java              communication log dialog (live), opened through MainActivity
   config/AppPreferences.java   SharedPreferences wrapper (KeyValueStore)
   config/StateStorage.java     saves/loads AppSettings and SequenceData
   data/*.java                  models: AppSettings, SequenceData, DropData, triggers, deltas, Limits
-  logic/*.java                 plain Java (no Android): protocol encoder/framer, timing, loop state machine
+  logic/*.java                 plain Java (no Android): protocol encoder/framer, timing, loop state machine,
+                               device simulator for testing without hardware, communication log file
   fragments/*Fragment.java     About, Drain, Drops, Graph, Settings
   services/BluetoothHelper.java Bluetooth connect/send/receive, listener callbacks on the main thread
+  services/DeviceLink.java     byte stream abstraction (RFCOMM socket or the simulator pipes)
+  services/SimulatorLink.java  in-process link to logic/DeviceSimulator (debug-only entry point)
   views/GraphCanvasView.java   custom View
 app/src/main/res/              layout/, menu/, drawable/, values/, values-night/, xml/
 ```
@@ -83,6 +89,18 @@ app/src/main/res/              layout/, menu/, drawable/, values/, values-night/
 - `androidx.recyclerview` is not declared explicitly in `app/build.gradle.kts`; it arrives transitively. Add it to `libs.versions.toml` before using it.
 - `lintDebug` can report a stale manifest error from cached analysis; rerun with `--rerun-tasks` before chasing it.
 - `BluetoothAdapter.getDefaultAdapter()` is deprecated but in use.
+- Debug builds add a "Simulated dropController (debug)" entry to the Settings device list
+  (`BluetoothHelper.connectSimulator()`, `SimulatorLink`, `logic/DeviceSimulator`). It works on an emulator and
+  without hardware; the real RFCOMM path (`RfcommLink`, `connect(BluetoothDevice)`) must stay unchanged.
+  `connectSimulator()` does nothing unless `BluetoothHelper` was created with `simulatorAllowed` (debug builds).
+- Every message sent or received by `BluetoothHelper`, plus connection events (`# connected`,
+  `# connection lost`, ...), is appended to `logic/ProtocolFileLog` (`files/logs/protocol.log`, 200 KB limit) in
+  every build, from a dedicated executor so the Bluetooth threads never wait for the disk. This is the only log (the
+  old in-memory `ProtocolLog` and its debug menu item were removed as a duplicate). The About tab button opens it in
+  `LogDialogs.showCommunicationLog()`: the dialog registers a `ProtocolFileLog.Listener`, and a change reloads the
+  file at most every 300 ms (skipped while the user selects text; the view follows the end only when it was at the
+  bottom). Share goes through the `.fileprovider` FileProvider. Keep the log class Android-free so it stays
+  JVM-testable; its listeners run on the file log thread, so the UI must hop to the main thread.
 - Several files have uncommitted work in progress; check `git status` and do not revert changes you did not make.
 
 ## Code Style Guidelines

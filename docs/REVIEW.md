@@ -1,0 +1,171 @@
+# Code review: device simulator and communication logs
+
+Date: 2026-11-11. Scope: the uncommitted changes for the in-process device simulator, the in-memory protocol
+log, the persistent communication log file and the About tab entry point. Line numbers are from the review date
+and may shift after edits; use the method names when they disagree.
+
+Status legend: `[ ]` open, `[x]` fixed (add the date or commit when checking an item off).
+
+Note: items M3, L2, L3, L8 and L9 name `MainActivity` methods and fields. The log dialog code was moved to
+`LogDialogs` later (see S7), with the same method and field names, so read `LogDialogs` where they say
+`MainActivity`. `MainActivity` only creates it, delegates `showProtocolLog()` / `showCommunicationLog()` and calls
+`LogDialogs.release()` from `onDestroy()`.
+
+Verification at review time: `testDebugUnitTest` (178 tests), `assembleDebug`, `assembleRelease` and `lintDebug`
+all passed. No critical defects were found.
+
+After the fixes (2026-11-11): `testDebugUnitTest` (182 tests), `assembleDebug`, `assembleRelease` and `lintDebug`
+all pass; all items below are checked off.
+
+## Medium priority
+
+- [x] **M1. Trim the file log with hysteresis.** `logic/ProtocolFileLog.java` (`append()` and
+      `trimIfNeeded()`): after every append, once the file is near `maxBytes`, the whole file is read and
+      rewritten. At the 200 KB limit that is roughly 400 KB of disk I/O per message, on the Bluetooth read thread
+      and on the single write executor, so it can delay receiving `[FTS]` and sending the next commands.
+      Fix: trigger the trim only above `maxBytes`, but trim down to about 75% of the limit
+      (`targetBytes = maxBytes - maxBytes / 4`), so the rewrite happens once per ~50 KB of new data. Optionally
+      move file writes to a dedicated single-thread executor to keep the Bluetooth threads free.
+      *Fixed 2026-11-11: `trimIfNeeded()` now trims to `maxBytes - maxBytes / 4`; covered by
+      `ProtocolFileLogTest.rotation_trimsWellBelowTheLimit`. File writes stayed on the Bluetooth threads at that
+      time (the trim is now rare, so the extra executor was not worth the ordering complexity).*
+      *Revisited in the second review (see S3): the writes now run on a dedicated executor.*
+- [x] **M2. Do not let a `ProtocolLog` listener break the connection.** `logic/ProtocolLog.java`
+      (`notifyListeners()`): an exception from a listener escapes into `ConnectedThread.run()`, which only catches
+      `IOException`, so the read thread ends without `connectionLost()`. In `ConnectedThread.write()` it fails the
+      write-executor task instead. Fix: catch `RuntimeException` per listener (a log must never break the
+      connection) or document and enforce a non-throwing listener contract.
+      *Fixed 2026-11-11: `notifyListeners()` catches `RuntimeException` per listener; covered by
+      `ProtocolLogTest.throwingListener_doesNotBreakTheLogOrOtherListeners`.*
+- [x] **M3. Keep file I/O off the main thread.** `MainActivity.showCommunicationLog()` /
+      `showFileLogText()` read the whole log file in the UI thread, and the Clear button truncates it there too.
+      A 200 KB file is usually fast, but slow storage can cause jank. Fix: read and clear on a background executor
+      and update the `TextView` through `runOnUiThread`.
+      *Fixed 2026-11-11: `MainActivity` has a single-thread `logIoExecutor` (shut down in `onDestroy`) used by
+      `loadFileLogText()` and `clearFileLog()`; the text and the scroll happen on the UI thread.*
+
+## Low priority
+
+- [x] **L1. Avoid the hard cast in `AboutFragment`.** `AboutFragment.java` casts `requireActivity()` to
+      `MainActivity`; this is safe today but breaks if the fragment is hosted elsewhere. Check `instanceof` or
+      introduce a small `CommunicationLogHost` interface.
+      *Fixed 2026-11-11: the fragment checks `instanceof MainActivity` and hides the button in another host.*
+- [x] **L2. Dismiss the log dialog before `super.onDestroy()`.** `MainActivity.onDestroy()` currently calls
+      `super.onDestroy()` first and dismisses `protocolLogDialog` afterwards.
+      *Fixed 2026-11-11: both dialogs are dismissed and the log executor is shut down before `super.onDestroy()`.*
+- [x] **L3. Clean up the shared dialog field.** `protocolLogDialog` is used for both the in-memory and the file
+      dialog, and a second open request is silently ignored. Consider separate fields and set the field to `null`
+      in the dismiss listener.
+      *Fixed 2026-11-11: separate `protocolLogDialog` / `communicationLogDialog` fields, each cleared in its
+      dismiss listener.*
+- [x] **L4. Rename the communication log resources.** `btn_protocol_log`, `about_protocol_log`,
+      `protocol_log_clear` and `protocol_log_close` now describe the communication log; rename them for clarity.
+      *Fixed 2026-11-11: `btn_communication_log`, `about_communication_log`, and the shared `log_clear` /
+      `log_close` (used by both dialogs).*
+- [x] **L5. Fix the Stage 11 documentation.** `docs/PLAN.md` step 11.7 still says the About button shows the live
+      in-memory log; it now opens the file log from 11.8. Also move 11.7/11.8 after 11.6 so the numbering is in
+      order.
+      *Fixed 2026-11-11: 11.6 now precedes 11.7, and 11.7 describes only the debug overflow item.*
+- [x] **L6. Distinguish "empty" from "unreadable" in the file log.** `ProtocolFileLog.readAll()` returns `""`
+      both for a missing file and for a read error, so the dialog shows "No messages yet" in both cases. Return
+      `null` or a small result object, or expose a separate error flag.
+      *Fixed 2026-11-11: `readAll()` is `@Nullable` and returns `null` on a read error; the dialog shows
+      "Could not read the log file". Covered by `ProtocolFileLogTest.readAll_returnsNullWhenTheFileCannotBeRead`.*
+- [x] **L7. Cancel a pending `[FTS]` when a new sequence starts.** `SimulatorLink.scheduleFinish()` keeps the
+      scheduled task, so a new sequence can produce an extra or early `[FTS]`. Store the `ScheduledFuture` and
+      cancel it when the simulator starts another sequence.
+      *Fixed 2026-11-11: `SimulatorLink` keeps `pendingFinish` and cancels it before scheduling the next `[FTS]`;
+      covered by `SimulatorLinkTest.newSequence_cancelsThePendingFinishedFlag`.*
+- [x] **L8. Make the log dialog height flexible.** `dialog_protocol_log.xml` uses a fixed `360dp` height; in
+      landscape or on small screens the dialog may not fit. Use a screen-relative maximum height.
+      *Fixed 2026-11-11: `MainActivity.limitLogDialogHeight()` caps the scroll view at 60% of the screen height.*
+- [x] **L9. Do not force-scroll the log on every update.** `MainActivity.renderProtocolLog()` scrolls to the
+      bottom for every new message, which fights the user while they read older entries. Scroll only when the
+      view is already at the bottom.
+      *Fixed 2026-11-11: the listener checks `isScrolledToBottom()` before scrolling; the dialog still opens at
+      the newest entry.*
+- [x] **L10. Remove the duplicated debug check.** `MainActivity.isDebuggable()` and
+      `SettingsFragment.isSimulatorAvailable()` implement the same check; extract a shared helper.
+      *Fixed 2026-11-11: `DropControllerApp.isDebuggable()` is the single implementation.*
+- [x] **L11. Replace the `null` sentinel in the Settings device list.** `SettingsFragment` adds `null` to
+      `List<BluetoothDevice>` to mark the simulator. It works, but a future iteration over the list can throw
+      `NullPointerException`; use a small entry type with a label and an optional device.
+      *Fixed 2026-11-11: a private `DeviceEntry` (label + nullable device) is used instead of the `null` entry.*
+- [x] **L12. Keep crash dumps out of the repository.** `hs_err_pid31496.log` is untracked in the repository root.
+      Delete it and add `hs_err_pid*.log` to `.gitignore`.
+      *Fixed 2026-11-11: the dump is deleted and `.gitignore` ignores `hs_err_pid*.log` / `replay_pid*.log`.*
+
+## Out of scope (pre-existing, not caused by this change)
+
+- [x] **P1. Remove duplicated Gradle properties.** `gradle.properties` contained the `android.dependency.*` and
+      `android.r8.*` keys twice in the working copy.
+      *Resolved: the duplicates never reached the branch (`master` has each key once). The unrelated
+      `org.gradle.configuration-cache=true` and the wrapper `distributionSha256Sum` were reverted from this branch;
+      they belong in a separate change.*
+- [x] **P2. Align the Gradle version documentation.** `AGENTS.md` says Gradle 8.13, while
+      `gradle/wrapper/gradle-wrapper.properties` uses 9.6.0.
+      *Fixed 2026-11-11: `AGENTS.md` now says Gradle 9.6.0.*
+
+## Second review (branch review before merge)
+
+Verification: `testDebugUnitTest`, `assembleDebug`, `assembleRelease` and `lintDebug` passed before and after
+these changes.
+
+- [x] **S1. Keep per-machine IDE state out of the branch.** `.idea/deploymentTargetSelector.xml` held the serial
+      number of a physical phone, and `.idea/misc.xml` only gained an XML declaration.
+      *Fixed: both files are back to the `master` version and `/.idea/deploymentTargetSelector.xml` is ignored.
+      The tracked copy is removed from the index in the same change.*
+- [x] **S2. Keep unrelated Gradle changes out of this branch.** `org.gradle.configuration-cache=true` and
+      `distributionSha256Sum` do not belong to the debugging and logging work.
+      *Fixed: reverted from this branch; propose them separately.*
+- [x] **S3. Do not write the file log on the Bluetooth threads.** `BluetoothHelper.recordSent()` and
+      `recordReceived()` wrote the file synchronously on the read thread and the write executor.
+      *Fixed: `BluetoothHelper` has a single-thread `fileLogExecutor`; the timestamp is taken when the message is
+      recorded and passed to `ProtocolFileLog.sent/received(..., timestampMs)`, so the order and the times stay
+      correct.*
+- [x] **S4. Log connection events and failed writes.** The file showed only messages, so a shared log did not
+      say when a connection opened, failed or was lost.
+      *Fixed: `ProtocolFileLog.event()` writes `# ...` lines for connect, connection failed, connection lost,
+      disconnect by the app and a failed write. Covered by `ProtocolFileLogTest.event_*`.*
+- [x] **S5. Make `connectSimulator()` safe in release builds.** The method was public and guarded only by the
+      hidden Settings entry.
+      *Fixed: `BluetoothHelper(Context, boolean simulatorAllowed)`; `DropControllerApp` passes `isDebuggable()`
+      and `connectSimulator()` returns without connecting when it is false.*
+- [x] **S6. Small cleanups.** `ProtocolFileLog.readAll()` now reuses `readBytes()`; the `append()` locking
+      requirement is documented.
+- [x] **S7. Move the log dialogs out of `MainActivity` and test that they are shown.** `MainActivity` had grown by
+      about 200 lines of dialog code, and `LogDialogsSmokeTest` only checked that the activity survives.
+      *Fixed: the dialogs, their scroll and height handling, the background file I/O and the share intent live in
+      `LogDialogs` (created by `MainActivity`, released in `onDestroy()`; `MainActivity.showProtocolLog()` and
+      `showCommunicationLog()` only delegate). `LogDialogsSmokeTest` now asserts `isCommunicationLogShowing()` /
+      `isProtocolLogShowing()`, that a second open request does not stack a dialog, and that `release()` dismisses
+      both. These instrumented tests compile but have not been run: no device or emulator was available.*
+
+## Third review (one log instead of two)
+
+The in-memory `ProtocolLog` and the file log recorded the same messages, and the file log also had the connection
+events, Share and a release-build entry point. Only the live update of the debug dialog was missing in the file log.
+
+- [x] **T1. Remove the duplicate `ProtocolLog`.** Deleted `logic/ProtocolLog`, `ProtocolLogTest`, the debug overflow
+      item `action_protocol_log` (and `MainActivity.showProtocolLog()`, `LogDialogs.showProtocolLog()`,
+      `isProtocolLogShowing()`), the strings `protocol_log_title` / `protocol_log_empty` and
+      `BluetoothHelper.getProtocolLog()`. The layout `dialog_protocol_log` became `dialog_communication_log`.
+- [x] **T2. Live update of the communication log.** `ProtocolFileLog.Listener` is called after each appended entry
+      and after `clear()`, on the writing thread and outside the lock; a throwing listener is ignored. The dialog
+      registers it while it is open and reloads the file at most every 300 ms. A reload is skipped while text is
+      selected, and the view follows the end only if it was at the bottom. Covered by
+      `ProtocolFileLogTest.listener_*`, `removedListener_isNotCalled` and `throwingListener_*`.
+- [x] **T3. Documentation.** `AGENTS.md`, `docs/NOTES.md` and `docs/PLAN.md` describe the single log. The items
+      above that name `ProtocolLog` (M2, L3, L9) and the S7 text describe the state at that time.
+      `LogDialogsSmokeTest` lost the protocol log cases and gained one for a new entry while the dialog is open;
+      it compiles but has not been run (no device or emulator).
+
+## Already verified during the review
+
+- [x] The file-log rotation edge case where the trim boundary lands on the last newline (the file became empty)
+      is fixed and covered by `ProtocolFileLogTest.rotation_keepsTheLastLineWhenItIsLargerThanTheLimit`.
+- [x] The real RFCOMM path (`RfcommLink`, `BluetoothHelper.connect(BluetoothDevice)`) is unchanged.
+- [x] The simulator entry is debug-only; the file log and the About button work in release builds as requested.
+      (The in-memory protocol log that was debug-only too was removed in the third review.)
+- [x] The communication log is shared through the `.fileprovider` `FileProvider`, so no storage permission is
+      needed.

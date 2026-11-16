@@ -15,6 +15,8 @@ Status legend: `[ ]` todo, `[x]` done.
 - Stages 9 and 10 are implemented (code, unit tests, build and lint pass). Left: the manual pass on a device for
   stage 9 (rotation, dark mode, 5+ presets) and stage 10 (export, move the file, import on a clean install, import twice).
   Ideas and open questions are collected in `docs/NOTES.md`.
+- Stage 11 (device simulator for testing without hardware) is implemented; only the manual pass on an emulator is left.
+  Follow-up review findings are tracked in `docs/REVIEW.md`.
 
 ## Decisions
 - Language stays Java 11.
@@ -296,6 +298,56 @@ Open questions (to collect in `docs/NOTES.md` when the stages start):
 - The duplicate check compares all nine drops, also the hidden ones (beyond the number of drops).
 - Should a preset also be loadable from the Loop Page? Proposed: no.
 - Sharing presets between phones works by moving the JSON file; there is no built-in share button.
+
+## Stage 11. Testing without hardware (device simulator)
+Goal: check the app on an emulator or without a dropController, without changing the wire protocol or the release
+behavior. The Android emulator has no Bluetooth Classic adapter, so a simulated device is used instead of a real
+socket.
+
+Decisions:
+- The firmware is modelled in plain Java (`logic/DeviceSimulator`), not in the app's Bluetooth code, so it can be
+  unit tested on the JVM and reused by an in-process link.
+- `BluetoothHelper` talks to a `DeviceLink` (input/output streams). The real path is still the RFCOMM socket
+  (`RfcommLink`); `SimulatorLink` connects the same read/write threads to the simulator through pipes.
+- The simulator is offered only in debug builds (`ApplicationInfo.FLAG_DEBUGGABLE`), as an extra entry in the
+  Settings device list. Release builds and the real connection are unchanged.
+- The simulator copies the firmware checks (`dropDataIsOK`), answers `[HELLO]`, `[VERSION]`, `[AYT]` and drain
+  commands, and sends `[FTS]` after the latest STOP time (immediately after rejected data).
+
+Steps:
+- [x] 11.1 `logic/DeviceSimulator`: parse the app's messages, track valves, validate and time a sequence.
+- [x] 11.2 `DeviceSimulatorTest`: hello/version/AYT, drain, accepted sequence and its finish delay, flash and
+      Bulb camera timing, rejected data (missing trigger, wrong drop count), chunked and noisy input, reset.
+      `SimulatorLinkTest`: the pipes and the scheduled `[FTS]`.
+- [x] 11.3 `services/DeviceLink` + `SimulatorLink` (pipes and the `[FTS]` schedule); `BluetoothHelper` uses the
+      link for the real socket too (`RfcommLink`) and exposes `connectSimulator()`.
+- [x] 11.4 Settings: "Simulated dropController (debug)" in the device list, debug builds only
+      (`isSimulatorAvailable()`), string in `strings.xml`.
+- [x] 11.5 `./gradlew assembleDebug lintDebug testDebugUnitTest` passes.
+- [ ] 11.6 Manual pass on an emulator: connect to the simulated device, About shows the firmware version,
+      Single Sequence START -> ACTIVE -> START, Loop Mode TIMER and BUTTON, STOP/RESET, Drain.
+- [x] 11.7 Superseded by 11.8: the in-memory `logic/ProtocolLog` and the debug-only overflow item "Protocol log
+      (debug)" were removed as a duplicate of the file log; its live update moved to the communication log dialog.
+- [x] 11.8 `logic/ProtocolFileLog` appends every message to `files/logs/protocol.log` and keeps the file under
+      200 KB by dropping the oldest lines. The About tab button "Communication log" shows it in every build,
+      with Share (through `FileProvider`) and Clear. The dialog updates live through `ProtocolFileLog.Listener`.
+
+## Stage 12. Publishing (permission from Martyn Currey, author of the dropController)
+Martyn agreed to the app name, the dC icon, the included firmware and a Google Play release from our own developer
+account. He asked to use "V3" in the name (people tried the V3 app with the V4 controller) and to be told when the
+app is published, so he can link it and the GitHub repository from the website.
+
+- [x] 12.1 Name: `app_name` and the splash title are "dropController V3".
+- [x] 12.2 About tab: note that the app is for the V3 and not for the V4, plus credits for Martyn Currey and the site.
+- [x] 12.3 `applicationId` is `com.scadi.dropcontrollerv3` (the `namespace` and the Java packages stay).
+- [x] 12.4 MIT `LICENSE` for the app, `firmware/README.md` for the firmware (Martyn's files, unchanged), README updated.
+- [x] 12.5 Legacy `mipmap-*/ic_launcher*.webp` (Android 7.x) checked: they show the dC icon.
+- [ ] 12.6 Ask Martyn which license the open source V3 uses and name it in `firmware/README.md`.
+- [ ] 12.7 Release signing (keystore outside the repository), `bundleRelease`, decide on `isMinifyEnabled`.
+- [ ] 12.8 Store listing: description (V3 only, not for V4), screenshots, 512x512 icon, feature graphic.
+- [ ] 12.9 Privacy policy and the Data safety form (no data is collected; Bluetooth permissions; file picker export).
+- [ ] 12.10 Check the Google Play requirements for a new personal developer account (closed testing etc.).
+- [ ] 12.11 After publishing, send Martyn the Play Store link and the GitHub link.
 
 ## Out of scope
 - Drop data validation (the original app has none).

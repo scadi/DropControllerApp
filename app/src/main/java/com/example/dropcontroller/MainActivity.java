@@ -49,9 +49,10 @@ public class MainActivity extends AppCompatActivity implements NavigationBarView
     private MaterialToolbar toolbar;
     private BottomNavigationView bottomNavigationView;
     private static final String STATE_MAIN_SHOWN = "main_shown";
-    private final int REQUEST_BLUETOOTH_PERMISSIONS = 100; // Constant request code
+    private static final int REQUEST_BLUETOOTH_PERMISSIONS = 100; // Constant request code
 
     private BluetoothHelper bluetoothHelper;
+    private LogDialogs logDialogs;
     private final BluetoothHelper.Listener bluetoothListener = new BluetoothHelper.Listener() {
         @Override
         public void onStateChanged(@NonNull BluetoothHelper.State state) {
@@ -72,9 +73,9 @@ public class MainActivity extends AppCompatActivity implements NavigationBarView
         toolbar = findViewById(R.id.toolbar);
         bottomNavigationView = findViewById(R.id.bottom_navigation);
         bluetoothHelper = ((DropControllerApp) getApplication()).getBluetoothHelper();
+        logDialogs = new LogDialogs(this, bluetoothHelper);
 
         toolbar.inflateMenu(R.menu.top_app_bar_menu);
-
 
         // 2. Splash screen button click listener
         splashButton.setOnClickListener(v -> {
@@ -158,6 +159,16 @@ public class MainActivity extends AppCompatActivity implements NavigationBarView
         }
     }
 
+    /** Shows the persistent communication log; see {@link LogDialogs#showCommunicationLog()}. */
+    public void showCommunicationLog() {
+        logDialogs.showCommunicationLog();
+    }
+
+    @NonNull
+    public LogDialogs getLogDialogs() {
+        return logDialogs;
+    }
+
     @Override
     protected void onStart() {
         super.onStart();
@@ -191,6 +202,7 @@ public class MainActivity extends AppCompatActivity implements NavigationBarView
 
     @Override
     protected void onDestroy() {
+        logDialogs.release();
         super.onDestroy();
         // Close the connection only when the app is really finishing (not on rotation)
         if (isFinishing()) {
@@ -321,15 +333,13 @@ public class MainActivity extends AppCompatActivity implements NavigationBarView
                     permissionsToRequest.toArray(new String[0]),
                     REQUEST_BLUETOOTH_PERMISSIONS
             );
-        } else {
-            // Permissions are already granted, proceed with Bluetooth operations
-            // This is where you might enable the splash screen button or start the app logic
         }
     }
 
     // Callback method for the result of the permission request
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == REQUEST_BLUETOOTH_PERMISSIONS) {
             boolean allGranted = true;

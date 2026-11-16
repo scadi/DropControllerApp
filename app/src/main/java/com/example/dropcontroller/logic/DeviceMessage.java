@@ -22,15 +22,13 @@ public final class DeviceMessage {
     }
 
     private final Type type;
-    private final String raw;
     private final String version;
     private final String compileDate;
     private final String title;
     private final String message;
 
-    private DeviceMessage(Type type, String raw, String version, String compileDate, String title, String message) {
+    private DeviceMessage(Type type, String version, String compileDate, String title, String message) {
         this.type = type;
-        this.raw = raw;
         this.version = version;
         this.compileDate = compileDate;
         this.title = title;
@@ -41,11 +39,11 @@ public final class DeviceMessage {
     public static DeviceMessage parse(@NonNull String payload) {
         switch (payload) {
             case "HELLO":
-                return simple(Type.HELLO, payload);
+                return simple(Type.HELLO);
             case "YIA":
-                return simple(Type.YES_I_AM, payload);
+                return simple(Type.YES_I_AM);
             case "FTS":
-                return simple(Type.FINISHED, payload);
+                return simple(Type.FINISHED);
             default:
                 break;
         }
@@ -53,27 +51,22 @@ public final class DeviceMessage {
         // Fields are separated by commas; the last field may contain spaces (the compile date does)
         if (payload.startsWith("V,")) {
             String[] parts = payload.split(",", 3);
-            return new DeviceMessage(Type.VERSION, payload, parts[1], parts.length > 2 ? parts[2] : "", "", "");
+            return new DeviceMessage(Type.VERSION, parts[1], parts.length > 2 ? parts[2] : "", "", "");
         }
         if (payload.startsWith("M,")) {
             String[] parts = payload.split(",", 3);
-            return new DeviceMessage(Type.MESSAGE, payload, "", "", parts[1], parts.length > 2 ? parts[2] : "");
+            return new DeviceMessage(Type.MESSAGE, "", "", parts[1], parts.length > 2 ? parts[2] : "");
         }
-        return simple(Type.UNKNOWN, payload);
+        return simple(Type.UNKNOWN);
     }
 
-    private static DeviceMessage simple(Type type, String raw) {
-        return new DeviceMessage(type, raw, "", "", "", "");
+    private static DeviceMessage simple(Type type) {
+        return new DeviceMessage(type, "", "", "", "");
     }
 
     @NonNull
     public Type getType() {
         return type;
-    }
-
-    @NonNull
-    public String getRaw() {
-        return raw;
     }
 
     /** Firmware version, for {@link Type#VERSION}. */

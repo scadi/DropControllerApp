@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">DropControllerApp</string>
+    <string name="app_name">dropController V3</string>
 
-    <string name="splash_start">Start Drop Controller</string>
-    <string name="splash_title">dropController</string>
+    <string name="splash_start">Start dropController V3</string>
+    <string name="splash_title">dropController V3</string>
     <string name="splash_subtitle">Water drop photography</string>
 
     <!-- Top app bar connection indicator -->
@@ -79,6 +79,16 @@
     <string name="about_firmware_waiting">Device firmware: waiting for the device</string>
     <string name="about_firmware">Device firmware: %1$s (%2$s)</string>
     <string name="about_firmware_no_date">Device firmware: %1$s</string>
+    <string name="about_communication_log">Communication log</string>
+    <string name="about_v3_only">This app is for the dropController V3 and replaces the original Android app. It does not work with the dropController V4.</string>
+    <string name="about_credits">The dropController hardware, firmware and the original app are by Martyn Currey. The firmware is open source. See www.dropcontroller.com for the hardware and set up guides.</string>
+    <string name="communication_log_title">Communication log</string>
+    <string name="communication_log_empty">No messages yet. Connect to the device and press START.</string>
+    <string name="communication_log_share">Share</string>
+    <string name="communication_log_share_title">Share communication log</string>
+    <string name="communication_log_nothing_to_share">The log is empty.</string>
+    <string name="communication_log_clear_failed">Could not clear the log.</string>
+    <string name="communication_log_read_failed">Could not read the log file.</string>
 
     <!-- Graph tab -->
     <string name="graph_axis_unit">ms</string>
@@ -146,6 +156,9 @@
     <string name="bt_connection_lost">Connection lost.</string>
     <string name="bt_send_error">Error sending data.</string>
     <string name="bt_not_connected">Not connected to a device.</string>
+    <string name="bt_simulated_device">Simulated dropController (debug)</string>
+    <string name="log_clear">Clear</string>
+    <string name="log_close">Close</string>
 
     <string name="permissions_granted">Bluetooth permissions granted.</string>
     <string name="permissions_denied">Bluetooth functionality is limited without permissions.</string>

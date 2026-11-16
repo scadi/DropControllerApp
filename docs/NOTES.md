@@ -150,3 +150,19 @@ background for a future change.
       instead of creating `Name2`. This keeps repeated imports from adding copies.
 - [ ] Import reads at most 5 million characters; a larger file is rejected with a message.
 - [ ] Import/export file work runs on one background thread; the repository is only used on the main thread.
+
+## Stage 11 remarks
+- [ ] Not tested on an emulator yet: connect to the simulated device, START -> ACTIVE -> [FTS], Loop Mode TIMER and
+      BUTTON, STOP/RESET, Drain.
+- [ ] The simulator copies the firmware from `docs/PROTOCOL.md` and `firmware/`, not the real hardware: it does not
+      model baud-rate delays, pairing, a lost radio link or the 30-character receive buffer.
+- [ ] It is offered in debug builds only. `BluetoothHelper.connectSimulator()` is in the main source set, so other
+      debug-only code (for example Espresso tests) can call it later.
+- [ ] The simulated device reports `dC3_AS25006` and `Jan  1 2025`, so the About tab can be checked without hardware.
+- [ ] The simulator is not part of the release behavior: `RfcommLink` and `BluetoothHelper.connect(BluetoothDevice)`
+      are unchanged.
+- [ ] `logic/ProtocolFileLog` appends every message sent and received (the real socket and the simulator) and the
+      connection events to `files/logs/protocol.log` in every build (release too), with a 200 KB limit that drops
+      the oldest whole lines. The About tab button "Communication log" shows the file, updates it while the dialog is
+      open (a reload at most every 300 ms), and shares it through the `.fileprovider` FileProvider, so no storage
+      permission is needed. There is no separate in-memory log any more.

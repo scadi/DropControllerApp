@@ -13,3 +13,9 @@
 .externalNativeBuild
 .cxx
 local.properties
+# JVM crash dumps
+hs_err_pid*.log
+replay_pid*.log
+
+# Per-machine IDE state (selected device)
+/.idea/deploymentTargetSelector.xml

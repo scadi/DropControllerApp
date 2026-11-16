@@ -1,8 +1,10 @@
-# DropController App
+# dropController V3 App
 
 Native Android app for the **dropController V3**, an Arduino-based solenoid valve controller for water drop
 photography. The app talks to the controller over Bluetooth Classic (HC-06 module), sets up the drops, the camera
 trigger and the flash triggers, and starts the sequence.
+
+This app is a replacement for the original dropController V3 Android app. It is **not** for the dropController V4.
 
 This project is a rewrite of the original dropController Android app (made with MIT App Inventor) as a maintainable
 native Java app. The behavior of the original app is the reference.
@@ -16,7 +18,13 @@ native Java app. The behavior of the original app is the reference.
 - dropControllerV3 basic set up: <https://www.dropcontroller.com/basic-set-up/>
 
 The dropController hardware, firmware and the original app are by Martyn Currey. See the website for the hardware,
-kits and set up guides.
+kits and set up guides. This app is published with his permission: he agreed to the name, the dC icon (property of
+dropController.com) and the included firmware, which he has released as open source.
+
+## License
+
+The app is released under the [MIT License](LICENSE). The firmware in `firmware/` is by Martyn Currey and is not
+covered by that license (see [firmware/README.md](firmware/README.md)).
 
 ## Features
 
@@ -36,7 +44,8 @@ kits and set up guides.
 - **Drain tab**: opens a valve by hand, for draining and flushing.
 - **Settings**: number of drops, Loop Mode, trigger pulse times, which triggers are enabled, sounds, theme (system,
   light or dark) and RESET to the defaults (asks for confirmation).
-- **About tab**: app version and, once connected, the firmware version of the controller.
+- **About tab**: app version and, once connected, the firmware version of the controller; a note that the app is for
+  the V3 only and credits for the original author.
 
 ## Requirements
 

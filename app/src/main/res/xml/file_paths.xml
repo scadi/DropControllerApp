@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Communication log written by BluetoothHelper into getFilesDir()/logs -->
+    <files-path
+        name="logs"
+        path="logs/" />
+</paths>

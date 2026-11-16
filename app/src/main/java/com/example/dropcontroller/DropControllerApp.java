@@ -1,6 +1,7 @@
 package com.example.dropcontroller;
 
 import android.app.Application;
+import android.content.pm.ApplicationInfo;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatDelegate;
@@ -41,7 +42,7 @@ public class DropControllerApp extends Application {
         storage.loadSettings(settings);
         storage.loadSequence(sequence);
         applyThemeMode();
-        bluetoothHelper = new BluetoothHelper(this);
+        bluetoothHelper = new BluetoothHelper(this, isDebuggable());
         sequenceRunner = new SequenceRunner(bluetoothHelper, settings, sequence);
         deviceSession = new DeviceSession(bluetoothHelper);
         soundPlayer = new SoundPlayer(settings, sequenceRunner);
@@ -80,6 +81,13 @@ public class DropControllerApp extends Application {
     @NonNull
     public SoundPlayer getSoundPlayer() {
         return soundPlayer;
+    }
+
+    /**
+     * @return true for debug builds; the device simulator is hidden in release builds
+     */
+    public boolean isDebuggable() {
+        return (getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
     }
 
     public void saveSettings() {
