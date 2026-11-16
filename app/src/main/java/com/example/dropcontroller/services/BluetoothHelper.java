@@ -3,6 +3,7 @@ package com.example.dropcontroller.services;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothClass;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothSocket;
@@ -19,6 +20,7 @@ import androidx.annotation.StringRes;
 import androidx.core.content.ContextCompat;
 
 import com.example.dropcontroller.R;
+import com.example.dropcontroller.logic.BluetoothDeviceKind;
 import com.example.dropcontroller.logic.DeviceMessage;
 import com.example.dropcontroller.logic.DeviceSimulator;
 import com.example.dropcontroller.logic.MessageFramer;
@@ -162,24 +164,62 @@ public class BluetoothHelper {
     }
 
     /**
-     * @return "name\naddress" for a device list entry
+     * @return true if the paired devices can be read: Bluetooth is on and the permission is granted. Does not report
+     * anything to the listeners, so an empty {@link #getPairedDevices()} result can be told from a real empty list.
+     */
+    @SuppressLint("MissingPermission") // isEnabled() is only reached after hasConnectPermission()
+    public boolean canReadPairedDevices() {
+        return bluetoothAdapter != null && hasConnectPermission() && isAdapterEnabled();
+    }
+
+    @SuppressLint("MissingPermission") // Callers check hasConnectPermission() first
+    private boolean isAdapterEnabled() {
+        try {
+            return bluetoothAdapter.isEnabled();
+        } catch (SecurityException e) {
+            Log.w(TAG, "Missing Bluetooth permission", e);
+            return false;
+        }
+    }
+
+    /**
+     * @return the name of the device, or {@code null} if it has none or the permission is missing
+     */
+    @Nullable
+    @SuppressLint("MissingPermission") // Checked by hasConnectPermission() below
+    public String getDeviceName(@NonNull BluetoothDevice device) {
+        if (!hasConnectPermission()) {
+            return null;
+        }
+        try {
+            return device.getName();
+        } catch (SecurityException e) {
+            Log.w(TAG, "Missing Bluetooth permission", e);
+            return null;
+        }
+    }
+
+    /**
+     * @return the major device class (phone, audio, ...) or {@link BluetoothDeviceKind#UNKNOWN_CLASS}
+     */
+    public int getDeviceMajorClass(@NonNull BluetoothDevice device) {
+        try {
+            BluetoothClass deviceClass = device.getBluetoothClass();
+            return deviceClass != null ? deviceClass.getMajorDeviceClass() : BluetoothDeviceKind.UNKNOWN_CLASS;
+        } catch (SecurityException e) {
+            Log.w(TAG, "Missing Bluetooth permission", e);
+            return BluetoothDeviceKind.UNKNOWN_CLASS;
+        }
+    }
+
+    /**
+     * @return the text shown for a device without a name
      */
     @NonNull
-    @SuppressLint("MissingPermission") // Checked by hasConnectPermission() below
-    public String getDeviceLabel(@NonNull BluetoothDevice device) {
-        String name = null;
-        if (hasConnectPermission()) {
-            try {
-                name = device.getName();
-            } catch (SecurityException e) {
-                Log.w(TAG, "Missing Bluetooth permission", e);
-            }
-        }
-        if (name == null) {
-            name = appContext.getString(R.string.bt_unknown_device);
-        }
-        return name + "\n" + device.getAddress();
+    public String getUnknownDeviceName() {
+        return appContext.getString(R.string.bt_unknown_device);
     }
+
 
     private boolean hasConnectPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {

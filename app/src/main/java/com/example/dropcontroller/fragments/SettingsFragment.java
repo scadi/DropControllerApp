@@ -2,15 +2,17 @@ package com.example.dropcontroller.fragments;
 
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothDevice;
+import android.content.ActivityNotFoundException;
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.view.HapticFeedbackConstants;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
@@ -31,7 +33,9 @@ import com.example.dropcontroller.data.Limits;
 import com.example.dropcontroller.data.LoopDelayMethod;
 import com.example.dropcontroller.data.SequenceData;
 import com.example.dropcontroller.data.ThemeMode;
+import com.example.dropcontroller.logic.BluetoothDeviceKind;
 import com.example.dropcontroller.services.BluetoothHelper;
+import com.example.dropcontroller.views.DeviceListAdapter;
 import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
@@ -41,7 +45,9 @@ import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.slider.Slider;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.function.IntConsumer;
 
@@ -57,6 +63,8 @@ public class SettingsFragment extends Fragment {
     private static final int SLIDER_MAX_WAIT_SECONDS = 120;
     // Loop Mode options look dimmed (but stay editable) while Loop Mode is OFF
     private static final float DIMMED_ALPHA = 0.4f;
+    // Saved as the "used last time" device when the debug simulator is picked (a Bluetooth address never looks so)
+    private static final String SIMULATOR_KEY = "simulator";
 
     private DropControllerApp app;
     private BluetoothHelper bluetoothHelper;
@@ -482,32 +490,23 @@ public class SettingsFragment extends Fragment {
         Set<BluetoothDevice> pairedDevices = bluetoothHelper.getPairedDevices();
         boolean simulatorAvailable = app.isDebuggable();
         if (pairedDevices.isEmpty() && !simulatorAvailable) {
-            Toast.makeText(requireContext(), R.string.bt_no_paired_devices, Toast.LENGTH_LONG).show();
+            // When Bluetooth is off or the permission is missing, getPairedDevices() already told the user why
+            if (bluetoothHelper.canReadPairedDevices()) {
+                showNoPairedDevicesDialog();
+            }
             return;
         }
 
-        final List<DeviceEntry> deviceList = new ArrayList<>();
-        for (BluetoothDevice device : pairedDevices) {
-            deviceList.add(new DeviceEntry(device, bluetoothHelper.getDeviceLabel(device)));
-        }
-        if (simulatorAvailable) {
-            // Debug builds: test the app without a dropController or a Bluetooth adapter
-            deviceList.add(new DeviceEntry(null, getString(R.string.bt_simulated_device)));
-        }
-        final List<String> deviceLabels = new ArrayList<>();
-        for (DeviceEntry entry : deviceList) {
-            deviceLabels.add(entry.getLabel());
-        }
-
-        ArrayAdapter<String> adapter =
-                new ArrayAdapter<>(requireContext(), android.R.layout.select_dialog_item, deviceLabels);
+        final List<DeviceListAdapter.Entry> deviceList = buildDeviceEntries(pairedDevices, simulatorAvailable);
+        DeviceListAdapter adapter = new DeviceListAdapter(requireContext(), deviceList);
 
         dismissDialog();
         dialog = new MaterialAlertDialogBuilder(requireContext())
                 .setTitle(R.string.bt_select_device)
                 // Runs when a device is selected (Analogous to ListPicker.AfterPicking)
                 .setAdapter(adapter, (dialog, which) -> {
-                    DeviceEntry entry = deviceList.get(which);
+                    DeviceListAdapter.Entry entry = deviceList.get(which);
+                    app.setLastDevice(entry.getKey());
                     BluetoothDevice device = entry.getDevice();
                     if (device != null) {
                         bluetoothHelper.connect(device);
@@ -519,29 +518,51 @@ public class SettingsFragment extends Fragment {
                 .show();
     }
 
-    /** One row of the device picker: a paired Bluetooth device or, in debug builds, the simulator. */
-    private static final class DeviceEntry {
-
-        @Nullable
-        private final BluetoothDevice device;
-
-        @NonNull
-        private final String label;
-
-        private DeviceEntry(@Nullable BluetoothDevice device, @NonNull String label) {
-            this.device = device;
-            this.label = label;
+    /**
+     * Rows of the device picker: the device used last time first, then the devices that look like a dropController,
+     * then the other devices by kind and name. The simulator (debug builds) is always the last row.
+     */
+    @NonNull
+    private List<DeviceListAdapter.Entry> buildDeviceEntries(@NonNull Set<BluetoothDevice> pairedDevices,
+                                                             boolean simulatorAvailable) {
+        String lastDevice = app.getLastDevice();
+        List<DeviceListAdapter.Entry> entries = new ArrayList<>();
+        for (BluetoothDevice device : pairedDevices) {
+            String name = bluetoothHelper.getDeviceName(device);
+            BluetoothDeviceKind kind =
+                    BluetoothDeviceKind.classify(name, bluetoothHelper.getDeviceMajorClass(device));
+            String address = device.getAddress();
+            entries.add(new DeviceListAdapter.Entry(device, address,
+                    name != null ? name : bluetoothHelper.getUnknownDeviceName(), address, kind,
+                    address.equals(lastDevice)));
         }
-
-        @NonNull
-        private String getLabel() {
-            return label;
+        entries.sort(Comparator
+                .comparing((DeviceListAdapter.Entry entry) -> !entry.isLastUsed())
+                .thenComparingInt(entry -> entry.getKind().getSortRank())
+                .thenComparing(entry -> entry.getName().toLowerCase(Locale.getDefault())));
+        if (simulatorAvailable) {
+            // Debug builds: test the app without a dropController or a Bluetooth adapter
+            entries.add(new DeviceListAdapter.Entry(null, SIMULATOR_KEY, getString(R.string.bt_simulated_device),
+                    getString(R.string.bt_simulated_device_address), BluetoothDeviceKind.SERIAL_MODULE,
+                    SIMULATOR_KEY.equals(lastDevice)));
         }
+        return entries;
+    }
 
-        /** @return the paired device, or {@code null} for the simulator entry */
-        @Nullable
-        private BluetoothDevice getDevice() {
-            return device;
-        }
+    /** Explains how to pair the dropController and opens the system Bluetooth settings on request. */
+    private void showNoPairedDevicesDialog() {
+        dismissDialog();
+        dialog = new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.bt_no_devices_title)
+                .setMessage(R.string.bt_no_devices_message)
+                .setPositiveButton(R.string.bt_open_settings, (dialog, which) -> {
+                    try {
+                        startActivity(new Intent(Settings.ACTION_BLUETOOTH_SETTINGS));
+                    } catch (ActivityNotFoundException e) {
+                        Toast.makeText(requireContext(), R.string.bt_no_paired_devices, Toast.LENGTH_LONG).show();
+                    }
+                })
+                .setNegativeButton(R.string.bt_cancel, (dialog, which) -> dialog.dismiss())
+                .show();
     }
 }

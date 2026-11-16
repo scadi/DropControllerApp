@@ -28,6 +28,8 @@ public class StateStorage {
     private static final String KEY_FLASH_PULSE = "settings.flashPulseMs";
     private static final String KEY_SOUNDS = "settings.sounds";
     private static final String KEY_THEME_MODE = "settings.themeMode";
+    // A device preference, like sounds: not part of the settings, so RESET and presets leave it alone
+    private static final String KEY_LAST_DEVICE = "bluetooth.lastDevice";
 
     private final KeyValueStore store;
 
@@ -56,6 +58,21 @@ public class StateStorage {
         settings.setFlashPulseMs(store.getInt(KEY_FLASH_PULSE, defaults.getFlashPulseMs()));
         settings.setSoundsOn(store.getBoolean(KEY_SOUNDS, defaults.isSoundsOn()));
         settings.setThemeMode(parseThemeMode(store.getString(KEY_THEME_MODE, null), defaults.getThemeMode()));
+    }
+
+    /**
+     * @param address the address of the device picked in the device list last (any text that identifies the entry)
+     */
+    public void saveLastDevice(@NonNull String address) {
+        store.storeString(KEY_LAST_DEVICE, address);
+    }
+
+    /**
+     * @return the address saved by {@link #saveLastDevice(String)}, or {@code null} if no device was picked yet
+     */
+    @Nullable
+    public String loadLastDevice() {
+        return store.getString(KEY_LAST_DEVICE, null);
     }
 
     public void saveSequence(@NonNull SequenceData data) {

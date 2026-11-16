@@ -349,6 +349,13 @@ app is published, so he can link it and the GitHub repository from the website.
 - [ ] 12.10 Check the Google Play requirements for a new personal developer account (closed testing etc.).
 - [ ] 12.11 After publishing, send Martyn the Play Store link and the GitHub link.
 
+## Stage 13. Informative Bluetooth device picker
+- [x] 13.1 Rows with an icon for the kind of the device (`logic/BluetoothDeviceKind`: HC-05/HC-06 name, serial module,
+      phone, computer, audio), name, address and a hint for devices that look like a dropController.
+- [x] 13.2 The device used last time is saved (`StateStorage.saveLastDevice`, a device preference kept by RESET), listed
+      first, highlighted and marked with a check.
+- [x] 13.3 An empty list opens a dialog that explains the pairing (PIN 1234) with a button to the system Bluetooth settings.
+
 ## Out of scope
 - Drop data validation (the original app has none).
 - New behavior not present in the original app.
