@@ -6,6 +6,11 @@ and may shift after edits; use the method names when they disagree.
 
 Status legend: `[ ]` open, `[x]` fixed (add the date or commit when checking an item off).
 
+Note: items M3, L2, L3, L8 and L9 name `MainActivity` methods and fields. The log dialog code was moved to
+`LogDialogs` later (see S7), with the same method and field names, so read `LogDialogs` where they say
+`MainActivity`. `MainActivity` only creates it, delegates `showProtocolLog()` / `showCommunicationLog()` and calls
+`LogDialogs.release()` from `onDestroy()`.
+
 Verification at review time: `testDebugUnitTest` (178 tests), `assembleDebug`, `assembleRelease` and `lintDebug`
 all passed. No critical defects were found.
 

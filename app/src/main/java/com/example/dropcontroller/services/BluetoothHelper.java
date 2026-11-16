@@ -239,14 +239,16 @@ public class BluetoothHelper {
         connectedThread = null;
         cancelThreads();
         if (closing != null) {
-            recordEvent("disconnected by the app");
             // Send BYE after any queued writes, then close the socket
             try {
                 writeExecutor.execute(() -> {
                     closing.write(ProtocolEncoder.bye().getBytes(StandardCharsets.US_ASCII));
+                    // Recorded after [BYE] so the file log reads in the order things happened
+                    recordEvent("disconnected by the app");
                     closing.cancel();
                 });
             } catch (RejectedExecutionException e) {
+                recordEvent("disconnected by the app");
                 closing.cancel();
             }
         }
