@@ -10,7 +10,7 @@ Guidance for agentic coding agents working in this repository.
 ## Project Overview
 - Native Android app written in **Java** (source/target 11, no Kotlin). Single Gradle module `:app`, root project `DropControllerApp`.
 - Controls a "drop" device over Bluetooth Classic (SPP/RFCOMM, HC-05/Arduino style). Logic was ported from an MIT App Inventor project; comments refer to "TinyDB", "ListPicker", "Clock_LoopDelayTimer", "BluetoothClient1".
-- Package / applicationId: `com.example.dropcontroller`. `minSdk` 24, `compileSdk`/`targetSdk` 36.
+- Package / applicationId: the Java package and `namespace` are `com.example.dropcontroller`; the `applicationId` is `com.scadi.dropcontrollerv3`. `minSdk` 24, `compileSdk`/`targetSdk` 36.
 - UI is View-based (XML layouts, `findViewById`). No Compose, no ViewBinding, no DI framework, no ViewModel/LiveData.
 - Build uses Gradle Kotlin DSL (`*.kts`) and a version catalog at `gradle/libs.versions.toml`. Gradle 9.6.0,
   AGP 8.13.1. JDK 21 (JBR) is used locally.
@@ -19,6 +19,7 @@ Guidance for agentic coding agents working in this repository.
 ## Product Context (dropController V3 Android app)
 This project is a rewrite of the original App Inventor 2 app (Play Store id `appinventor.ai_m_currey.dropController`) into a maintainable native app. The behavior of the original app is the reference; do not invent new behavior. Docs: https://www.dropcontroller.com/android-app-getting-started/ and https://www.dropcontroller.com/android-app/.
 
+- **Permission**: Martyn Currey (author of the dropController) agreed to the app name, the dC icon, the included firmware and a Google Play release from our own account. The app name must contain "V3" (the V4 controller is a different device and does not work with this app). Never reuse his Play Store id. Do not edit the firmware files in `firmware/`. App code is MIT (`LICENSE`); the firmware is his. Status in `docs/PLAN.md` Stage 12.
 - **Device**: dropController V3 (Arduino + HC-06 module), water drop photography. Bluetooth Classic, device is paired in system settings first (PIN `1234`), then picked from the paired-devices list in the app (Settings tab, NOT-CONNECTED / CONNECTED button).
 - **Tabs**: Drops, Settings, Drain, Graph, About (About shows app version and, once connected, device firmware version).
 - **Settings**: number of drops (1-9), Loop Mode (OFF/ON, delay method TIMER/BUTTON, wait time in seconds), trigger pulse times (ms, default 50), camera/flash trigger enable switches, sounds on/off, theme SYSTEM/LIGHT/DARK (a device preference like sounds: not part of a preset, kept by RESET), RESET (asks for confirmation, then restores all settings and drop data to defaults).

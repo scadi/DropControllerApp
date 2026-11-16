@@ -332,6 +332,23 @@ Steps:
       200 KB by dropping the oldest lines. The About tab button "Communication log" shows it in every build,
       with Share (through `FileProvider`) and Clear. The dialog updates live through `ProtocolFileLog.Listener`.
 
+## Stage 12. Publishing (permission from Martyn Currey, author of the dropController)
+Martyn agreed to the app name, the dC icon, the included firmware and a Google Play release from our own developer
+account. He asked to use "V3" in the name (people tried the V3 app with the V4 controller) and to be told when the
+app is published, so he can link it and the GitHub repository from the website.
+
+- [x] 12.1 Name: `app_name` and the splash title are "dropController V3".
+- [x] 12.2 About tab: note that the app is for the V3 and not for the V4, plus credits for Martyn Currey and the site.
+- [x] 12.3 `applicationId` is `com.scadi.dropcontrollerv3` (the `namespace` and the Java packages stay).
+- [x] 12.4 MIT `LICENSE` for the app, `firmware/README.md` for the firmware (Martyn's files, unchanged), README updated.
+- [x] 12.5 Legacy `mipmap-*/ic_launcher*.webp` (Android 7.x) checked: they show the dC icon.
+- [ ] 12.6 Ask Martyn which license the open source V3 uses and name it in `firmware/README.md`.
+- [ ] 12.7 Release signing (keystore outside the repository), `bundleRelease`, decide on `isMinifyEnabled`.
+- [ ] 12.8 Store listing: description (V3 only, not for V4), screenshots, 512x512 icon, feature graphic.
+- [ ] 12.9 Privacy policy and the Data safety form (no data is collected; Bluetooth permissions; file picker export).
+- [ ] 12.10 Check the Google Play requirements for a new personal developer account (closed testing etc.).
+- [ ] 12.11 After publishing, send Martyn the Play Store link and the GitHub link.
+
 ## Out of scope
 - Drop data validation (the original app has none).
 - New behavior not present in the original app.

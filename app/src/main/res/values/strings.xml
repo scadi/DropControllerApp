@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">DropControllerApp</string>
+    <string name="app_name">dropController V3</string>
 
-    <string name="splash_start">Start Drop Controller</string>
-    <string name="splash_title">dropController</string>
+    <string name="splash_start">Start dropController V3</string>
+    <string name="splash_title">dropController V3</string>
     <string name="splash_subtitle">Water drop photography</string>
 
     <!-- Top app bar connection indicator -->
@@ -80,6 +80,8 @@
     <string name="about_firmware">Device firmware: %1$s (%2$s)</string>
     <string name="about_firmware_no_date">Device firmware: %1$s</string>
     <string name="about_communication_log">Communication log</string>
+    <string name="about_v3_only">This app is for the dropController V3 and replaces the original Android app. It does not work with the dropController V4.</string>
+    <string name="about_credits">The dropController hardware, firmware and the original app are by Martyn Currey. The firmware is open source. See www.dropcontroller.com for the hardware and set up guides.</string>
     <string name="communication_log_title">Communication log</string>
     <string name="communication_log_empty">No messages yet. Connect to the device and press START.</string>
     <string name="communication_log_share">Share</string>

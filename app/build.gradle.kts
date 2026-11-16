@@ -9,7 +9,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.dropcontroller"
+        applicationId = "com.scadi.dropcontrollerv3"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
