@@ -4,6 +4,9 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,8 +18,10 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 
+import com.example.dropcontroller.logic.LogLineKind;
 import com.example.dropcontroller.logic.ProtocolFileLog;
 import com.example.dropcontroller.services.BluetoothHelper;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -158,24 +163,66 @@ public final class LogDialogs {
      */
     private void loadFileLogText(@NonNull TextView textView, @NonNull ScrollView scrollView,
                                  @NonNull ProtocolFileLog fileLog, boolean scrollToEnd) {
+        // The colors follow the current day/night configuration of the activity
+        int receivedColor = ContextCompat.getColor(activity, R.color.log_received);
+        int sentColor = ContextCompat.getColor(activity, R.color.log_sent);
+        int errorColor = ContextCompat.getColor(activity, R.color.log_error);
         runInBackground(() -> {
             String text = fileLog.readAll();
+            CharSequence colored = text == null || text.isEmpty()
+                    ? text : colorize(text, receivedColor, sentColor, errorColor);
             activity.runOnUiThread(() -> {
                 if (activity.isDestroyed()) {
                     return;
                 }
                 boolean follow = scrollToEnd || isScrolledToBottom(scrollView);
-                if (text == null) {
+                if (colored == null) {
                     textView.setText(R.string.communication_log_read_failed);
                 } else {
-                    textView.setText(text.isEmpty()
-                            ? activity.getString(R.string.communication_log_empty) : text);
+                    textView.setText(colored.length() == 0
+                            ? activity.getString(R.string.communication_log_empty) : colored);
                 }
                 if (follow) {
                     scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
                 }
             });
         });
+    }
+
+    /**
+     * Colors the message of every log line (received, sent, error events); the timestamp and the other lines keep
+     * the default text color. Only the display is colored: the file and the shared text stay plain.
+     */
+    @NonNull
+    private static CharSequence colorize(@NonNull String text, int receivedColor, int sentColor, int errorColor) {
+        SpannableStringBuilder builder = new SpannableStringBuilder(text);
+        int lineStart = 0;
+        while (lineStart < text.length()) {
+            int newline = text.indexOf('\n', lineStart);
+            int lineEnd = newline < 0 ? text.length() : newline;
+            LogLineKind.Result result = LogLineKind.parse(text.substring(lineStart, lineEnd));
+            int color;
+            switch (result.getKind()) {
+                case RECEIVED:
+                    color = receivedColor;
+                    break;
+                case SENT:
+                    color = sentColor;
+                    break;
+                case ERROR:
+                    color = errorColor;
+                    break;
+                default:
+                    color = 0;
+                    break;
+            }
+            if (color != 0) {
+                builder.setSpan(new ForegroundColorSpan(color), lineStart + result.getMessageStart(), lineEnd,
+                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+            lineStart = lineEnd + 1;
+        }
+        return builder;
     }
 
     /** Empties the log file in the background and updates the dialog when it is done. */

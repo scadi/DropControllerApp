@@ -36,6 +36,11 @@
     <color name="start_active_text">#FF111A1F</color>
     <color name="nav_connected">#FF1E88E5</color>
 
+    <!-- Communication log messages: received, sent, error (the timestamp keeps the normal text color) -->
+    <color name="log_received">#FF0284C7</color>
+    <color name="log_sent">#FF15803D</color>
+    <color name="log_error">#FFDC2626</color>
+
     <!-- Graph bars -->
     <color name="graph_drop">#FF1E88E5</color>
     <color name="graph_flash">#FFD17B00</color>

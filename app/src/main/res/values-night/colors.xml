@@ -34,6 +34,10 @@
     <color name="start_active_text">#FF111A1F</color>
     <color name="nav_connected">#FF64B5F6</color>
 
+    <color name="log_received">#FF38BDF8</color>
+    <color name="log_sent">#FF4ADE80</color>
+    <color name="log_error">#FFF87171</color>
+
     <color name="graph_drop">#FF64B5F6</color>
     <color name="graph_flash">#FFFFCA28</color>
     <color name="graph_camera">#FF81C784</color>
