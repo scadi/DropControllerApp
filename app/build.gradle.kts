@@ -37,6 +37,15 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
+    // APK file name: dropController-V3-<version>.apk (release) or dropController-V3-<version>-<build type>.apk
+    applicationVariants.all {
+        val suffix = if (buildType.name == "release") "" else "-${buildType.name}"
+        outputs.all {
+            (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl).outputFileName =
+                "dropController-V3-$appVersionName$suffix.apk"
+        }
+    }
 }
 
 dependencies {
