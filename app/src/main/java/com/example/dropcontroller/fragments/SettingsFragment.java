@@ -34,6 +34,8 @@ import com.example.dropcontroller.data.LoopDelayMethod;
 import com.example.dropcontroller.data.SequenceData;
 import com.example.dropcontroller.data.ThemeMode;
 import com.example.dropcontroller.logic.BluetoothDeviceKind;
+import com.example.dropcontroller.logic.BluetoothTransport;
+import com.example.dropcontroller.services.BleScanner;
 import com.example.dropcontroller.services.BluetoothHelper;
 import com.example.dropcontroller.views.DeviceListAdapter;
 import com.google.android.material.button.MaterialButtonToggleGroup;
@@ -88,6 +90,8 @@ public class SettingsFragment extends Fragment {
     private MaterialButtonToggleGroup themeGroup;
 
     private AlertDialog dialog;
+    // The running search for BLE modules, if any (its dialog is the "searching" dialog)
+    private BleScanner bleScanner;
 
     // True while the views are filled from the model, so the change listeners do not write back
     private boolean binding;
@@ -163,12 +167,17 @@ public class SettingsFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         // Avoid a leaked dialog window when the view is re-created (rotation)
+        cancelBleSearch();
         dismissDialog();
     }
 
     @Override
     public void onPause() {
         super.onPause();
+        if (bleScanner != null && bleScanner.isRunning()) {
+            cancelBleSearch();
+            dismissDialog();
+        }
         bluetoothHelper.removeListener(bluetoothListener);
         // A field that still has focus has not been committed yet
         commitNumberFields();
@@ -504,18 +513,24 @@ public class SettingsFragment extends Fragment {
         dialog = new MaterialAlertDialogBuilder(requireContext())
                 .setTitle(R.string.bt_select_device)
                 // Runs when a device is selected (Analogous to ListPicker.AfterPicking)
-                .setAdapter(adapter, (dialog, which) -> {
-                    DeviceListAdapter.Entry entry = deviceList.get(which);
-                    app.setLastDevice(entry.getKey());
-                    BluetoothDevice device = entry.getDevice();
-                    if (device != null) {
-                        bluetoothHelper.connect(device);
-                    } else {
-                        bluetoothHelper.connectSimulator();
-                    }
-                })
+                .setAdapter(adapter, (dialog, which) -> connectTo(deviceList.get(which)))
+                // A BLE module (BT05, HM-10) is usually not paired, so it is not in the list above
+                .setNeutralButton(R.string.bt_search_ble, (dialog, which) -> startBleSearch())
                 .setNegativeButton(R.string.bt_cancel, (dialog, which) -> dialog.dismiss())
                 .show();
+    }
+
+    /** Remembers the entry as the device used last and connects with the transport of the entry. */
+    private void connectTo(@NonNull DeviceListAdapter.Entry entry) {
+        app.setLastDevice(entry.getKey());
+        BluetoothDevice device = entry.getDevice();
+        if (device == null) {
+            bluetoothHelper.connectSimulator();
+        } else if (entry.getTransport() == BluetoothTransport.BLE) {
+            bluetoothHelper.connectBle(device);
+        } else {
+            bluetoothHelper.connect(device);
+        }
     }
 
     /**
@@ -532,21 +547,108 @@ public class SettingsFragment extends Fragment {
             BluetoothDeviceKind kind =
                     BluetoothDeviceKind.classify(name, bluetoothHelper.getDeviceMajorClass(device));
             String address = device.getAddress();
-            entries.add(new DeviceListAdapter.Entry(device, address,
-                    name != null ? name : bluetoothHelper.getUnknownDeviceName(), address, kind,
-                    address.equals(lastDevice)));
+            // A paired device that Android knows as LE only (a BLE module that was paired) needs the BLE transport
+            BluetoothTransport transport = bluetoothHelper.getPairedTransport(device);
+            String key = BluetoothTransport.key(transport, address);
+            // A key saved before BLE support is the plain address
+            boolean lastUsed = key.equals(lastDevice) || address.equals(lastDevice);
+            entries.add(new DeviceListAdapter.Entry(device, key,
+                    name != null ? name : bluetoothHelper.getUnknownDeviceName(), address, kind, transport,
+                    lastUsed));
         }
-        entries.sort(Comparator
-                .comparing((DeviceListAdapter.Entry entry) -> !entry.isLastUsed())
-                .thenComparingInt(entry -> entry.getKind().getSortRank())
-                .thenComparing(entry -> entry.getName().toLowerCase(Locale.getDefault())));
+        sortEntries(entries);
         if (simulatorAvailable) {
             // Debug builds: test the app without a dropController or a Bluetooth adapter
             entries.add(new DeviceListAdapter.Entry(null, SIMULATOR_KEY, getString(R.string.bt_simulated_device),
                     getString(R.string.bt_simulated_device_address), BluetoothDeviceKind.SERIAL_MODULE,
-                    SIMULATOR_KEY.equals(lastDevice)));
+                    BluetoothTransport.RFCOMM, SIMULATOR_KEY.equals(lastDevice)));
         }
         return entries;
+    }
+
+    private static void sortEntries(@NonNull List<DeviceListAdapter.Entry> entries) {
+        entries.sort(Comparator
+                .comparing((DeviceListAdapter.Entry entry) -> !entry.isLastUsed())
+                .thenComparingInt(entry -> entry.getKind().getSortRank())
+                .thenComparing(entry -> entry.getName().toLowerCase(Locale.getDefault())));
+    }
+
+    // ----------------------------------------------------
+    // Search for BLE modules (BT05, HM-10)
+    // ----------------------------------------------------
+
+    private void startBleSearch() {
+        if (!bluetoothHelper.canScanForBleModules()) {
+            Toast.makeText(requireContext(), R.string.bt_ble_permission_needed, Toast.LENGTH_LONG).show();
+            return;
+        }
+        cancelBleSearch();
+        bleScanner = bluetoothHelper.createBleScanner();
+        dismissDialog();
+        dialog = new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.bt_search_ble_title)
+                .setMessage(R.string.bt_searching_ble)
+                .setNegativeButton(R.string.bt_cancel, (d, which) -> cancelBleSearch())
+                .setOnCancelListener(d -> cancelBleSearch())
+                .show();
+        bleScanner.start(new BleScanner.Listener() {
+            @Override
+            public void onFinished(@NonNull List<BleScanner.Found> found) {
+                if (isAdded()) {
+                    showBleResults(found);
+                }
+            }
+
+            @Override
+            public void onFailed(@NonNull String reason) {
+                if (isAdded()) {
+                    dismissDialog();
+                    Toast.makeText(requireContext(), getString(R.string.bt_ble_search_failed, reason),
+                            Toast.LENGTH_LONG).show();
+                }
+            }
+        });
+    }
+
+    private void cancelBleSearch() {
+        if (bleScanner != null) {
+            bleScanner.cancel();
+            bleScanner = null;
+        }
+    }
+
+    private void showBleResults(@NonNull List<BleScanner.Found> found) {
+        bleScanner = null;
+        dismissDialog();
+        if (found.isEmpty()) {
+            dialog = new MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(R.string.bt_search_ble_title)
+                    .setMessage(R.string.bt_ble_none_found)
+                    .setPositiveButton(R.string.bt_search_ble, (d, which) -> startBleSearch())
+                    .setNegativeButton(R.string.bt_cancel, null)
+                    .show();
+            return;
+        }
+
+        String lastDevice = app.getLastDevice();
+        final List<DeviceListAdapter.Entry> entries = new ArrayList<>();
+        for (BleScanner.Found module : found) {
+            String address = module.getDevice().getAddress();
+            String key = BluetoothTransport.key(BluetoothTransport.BLE, address);
+            String name = module.getName() != null ? module.getName() : bluetoothHelper.getUnknownDeviceName();
+            entries.add(new DeviceListAdapter.Entry(module.getDevice(), key, name,
+                    getString(R.string.bt_ble_signal, address, module.getRssi()),
+                    BluetoothDeviceKind.classify(name, BluetoothDeviceKind.UNKNOWN_CLASS),
+                    BluetoothTransport.BLE, key.equals(lastDevice)));
+        }
+        sortEntries(entries);
+        dialog = new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.bt_search_ble_title)
+                .setAdapter(new DeviceListAdapter(requireContext(), entries),
+                        (d, which) -> connectTo(entries.get(which)))
+                .setNeutralButton(R.string.bt_search_ble, (d, which) -> startBleSearch())
+                .setNegativeButton(R.string.bt_cancel, null)
+                .show();
     }
 
     /** Explains how to pair the dropController and opens the system Bluetooth settings on request. */
@@ -562,6 +664,7 @@ public class SettingsFragment extends Fragment {
                         Toast.makeText(requireContext(), R.string.bt_no_paired_devices, Toast.LENGTH_LONG).show();
                     }
                 })
+                .setNeutralButton(R.string.bt_search_ble, (dialog, which) -> startBleSearch())
                 .setNegativeButton(R.string.bt_cancel, (dialog, which) -> dialog.dismiss())
                 .show();
     }

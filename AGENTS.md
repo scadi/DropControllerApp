@@ -9,7 +9,7 @@ Guidance for agentic coding agents working in this repository.
 
 ## Project Overview
 - Native Android app written in **Java** (source/target 11, no Kotlin). Single Gradle module `:app`, root project `DropControllerApp`.
-- Controls a "drop" device over Bluetooth Classic (SPP/RFCOMM, HC-05/Arduino style). Logic was ported from an MIT App Inventor project; comments refer to "TinyDB", "ListPicker", "Clock_LoopDelayTimer", "BluetoothClient1".
+- Controls a "drop" device over Bluetooth Classic (SPP/RFCOMM, HC-05/Arduino style) or, with a BLE UART module such as the BT05, over Bluetooth Low Energy. Logic was ported from an MIT App Inventor project; comments refer to "TinyDB", "ListPicker", "Clock_LoopDelayTimer", "BluetoothClient1".
 - Package / applicationId: the Java package and `namespace` are `com.example.dropcontroller`; the `applicationId` is `com.scadi.dropcontrollerv3`. `minSdk` 24, `compileSdk`/`targetSdk` 36.
 - UI is View-based (XML layouts, `findViewById`). No Compose, no ViewBinding, no DI framework, no ViewModel/LiveData.
 - Build uses Gradle Kotlin DSL (`*.kts`) and a version catalog at `gradle/libs.versions.toml`. Gradle 9.6.0,
@@ -46,12 +46,17 @@ Run from the repo root. On Windows use `.\gradlew.bat` (or `./gradlew` in bash).
 |---|---|
 | Debug APK | `./gradlew assembleDebug` |
 | Release APK | `./gradlew assembleRelease` |
+| Debug + Release APKs | `./gradlew buildApks` (output in `build/dist/`) |
 | Clean | `./gradlew clean` |
 | Install on device | `./gradlew installDebug` |
 | Lint (Android defaults only) | `./gradlew lintDebug` (or `lint`) |
 | Full verification | `./gradlew check` |
 | All unit tests (JVM) | `./gradlew testDebugUnitTest` (or `test`) |
 | All instrumented tests (device/emulator) | `./gradlew connectedDebugAndroidTest` |
+
+APK locations: `buildApks` puts the final files in `build/dist/` (the canonical place). `assembleDebug` and
+`assembleRelease` leave them in `app/build/outputs/apk/<type>/`. `app/release/` is created only by the Android Studio
+"Generate Signed App Bundle or APK" wizard (git-ignored); do not rely on it.
 
 ### Running a single test
 - Single unit test class:
@@ -76,7 +81,9 @@ app/src/main/java/com/example/dropcontroller/
                                device simulator for testing without hardware, communication log file
   fragments/*Fragment.java     About, Drain, Drops, Graph, Settings
   services/BluetoothHelper.java Bluetooth connect/send/receive, listener callbacks on the main thread
-  services/DeviceLink.java     byte stream abstraction (RFCOMM socket or the simulator pipes)
+  services/DeviceLink.java     byte stream abstraction (RFCOMM socket, BLE link or the simulator pipes)
+  services/BleLink.java        BLE UART link (GATT, service FFE0 / characteristic FFE1), writes in 20-byte packets
+  services/BleScanner.java     8 s scan for BLE UART modules for the "Search BLE modules" button
   services/SimulatorLink.java  in-process link to logic/DeviceSimulator (debug-only entry point)
   views/GraphCanvasView.java   custom View
 app/src/main/res/              layout/, menu/, drawable/, values/, values-night/, xml/
@@ -101,6 +108,12 @@ app/src/main/res/              layout/, menu/, drawable/, values/, values-night/
   file at most every 300 ms (skipped while the user selects text; the view follows the end only when it was at the
   bottom). Share goes through the `.fileprovider` FileProvider. Keep the log class Android-free so it stays
   JVM-testable; its listeners run on the file log thread, so the UI must hop to the main thread.
+- Two transports: RFCOMM (`ConnectThread`, `RfcommLink`, HC-05 / HC-06) and BLE (`BleLink`, BT05 / HM-10). Keep the
+  RFCOMM path unchanged. Both end in `BluetoothHelper.connected(...)`, so everything above the `DeviceLink` is shared.
+  The rule is in `logic/BluetoothTransport`: BLE only for a device found by the BLE search or a paired device that
+  Android reports as LE only; no automatic fallback. The saved last device is the plain address for RFCOMM and
+  `ble:<address>` for BLE. The GATT callbacks of `BleLink` run on a binder thread: they only queue data and results.
+  A BLE module is normally not paired, so it is not in `getBondedDevices()`; the picker has "Search BLE modules".
 - Several files have uncommitted work in progress; check `git status` and do not revert changes you did not make.
 
 ## Code Style Guidelines

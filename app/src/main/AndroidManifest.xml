@@ -5,11 +5,18 @@
     <uses-feature
         android:name="android.hardware.bluetooth"
         android:required="true" />
+    <!-- BLE UART modules (BT05, HM-10) are supported, but a standard HC-05 / HC-06 needs only Classic -->
+    <uses-feature
+        android:name="android.hardware.bluetooth_le"
+        android:required="false" />
+
 
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
-    <!-- Only used for cancelDiscovery() before connecting; the app never derives a location from Bluetooth -->
+    <!-- Used for cancelDiscovery() before connecting and for the BLE module search; the app never derives a
+         location from Bluetooth -->
+
     <uses-permission
         android:name="android.permission.BLUETOOTH_SCAN"
         android:usesPermissionFlags="neverForLocation"

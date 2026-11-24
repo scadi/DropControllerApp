@@ -344,6 +344,8 @@ app is published, so he can link it and the GitHub repository from the website.
 - [x] 12.5 Legacy `mipmap-*/ic_launcher*.webp` (Android 7.x) checked: they show the dC icon.
 - [ ] 12.6 Ask Martyn which license the open source V3 uses and name it in `firmware/README.md`.
 - [ ] 12.7 Release signing (keystore outside the repository), `bundleRelease`, decide on `isMinifyEnabled`.
+  Done so far: signing config read from `keystore.properties` or `DROP_*` env variables, `./gradlew buildApks`
+  collects debug and release APKs in `build/dist/`. Open: create the real keystore, `bundleRelease`, minify.
 - [ ] 12.8 Store listing: description (V3 only, not for V4), screenshots, 512x512 icon, feature graphic.
 - [ ] 12.9 Privacy policy and the Data safety form (no data is collected; Bluetooth permissions; file picker export).
 - [ ] 12.10 Check the Google Play requirements for a new personal developer account (closed testing etc.).
@@ -355,6 +357,40 @@ app is published, so he can link it and the GitHub repository from the website.
 - [x] 13.2 The device used last time is saved (`StateStorage.saveLastDevice`, a device preference kept by RESET), listed
       first, highlighted and marked with a check.
 - [x] 13.3 An empty list opens a dialog that explains the pairing (PIN 1234) with a button to the system Bluetooth settings.
+
+## Stage 14. BLE transport (BT05 / HM-10 style modules)
+Goal: work with a standard HC-05/HC-06 (Bluetooth Classic, as now) and also with a BLE UART module such as the BT05
+(JL chip, service `0xFFE0`, characteristic `0xFFE1`: NOTIFY, READ, WRITE, WRITE WITHOUT RESPONSE). Checked with
+nRF Connect and Serial Bluetooth Terminal: `[AYT]` gives `[YIA]`, `[VERSION]` gives `[V,dC3_AS25006,...]` at 9600
+baud, so the firmware is not changed. The wire protocol is not changed either; only the transport is new.
+
+Decisions:
+- Both transports stay. The Classic path (`ConnectThread`, `RfcommLink`) is not changed; BLE is a second
+  `DeviceLink` (`BleLink`) that ends in the same `BluetoothHelper.connected(...)`.
+- Transport rule (`logic/BluetoothTransport.choose`): a paired device of type LE only uses BLE; CLASSIC, DUAL and
+  unknown types use RFCOMM; a device found by the BLE search uses BLE. No automatic fallback.
+- A BLE module is usually not paired, so the device picker has a "Search BLE modules" button that scans for a few
+  seconds and lists the modules found (service `0xFFE0` or a name such as BT05 / HM-10).
+- The last used device is saved together with its transport; values saved before this stage are read as Classic.
+- No MTU request: packets stay at 20 bytes, the longest app message is 13 characters. Longer replies from the device
+  arrive in several notifications and `MessageFramer` joins them.
+- The communication log gets a `# transport: RFCOMM` or `# transport: BLE` line and the GATT events.
+
+Steps:
+- [x] 14.1 `logic/ByteQueueInputStream`: blocking `InputStream` fed by the GATT callbacks; `close()` ends the stream.
+- [x] 14.2 `logic/BleChunker`: splits a message into packets of at most 20 bytes.
+- [x] 14.3 `logic/BluetoothTransport`: the transport rule, and the device-key format for the saved last device.
+- [x] 14.4 JVM tests for 14.1-14.3, plus a simulator round trip through 20-byte packets.
+- [x] 14.5 `services/BleLink`: `connectGatt`, services, `FFE0/FFE1` (fallback: any notify + write characteristic),
+      notify through the CCCD, one write at a time, one retry after GATT error 133, GATT events in the log.
+- [x] 14.6 `BluetoothHelper.connectBle(...)`, transport line in the log.
+- [x] 14.7 `services/BleScanner` and the "Search BLE modules" button and list in the device picker.
+- [x] 14.8 Manifest (`bluetooth_le` feature not required), location permission up to API 30,
+      `BluetoothDeviceKind` knows BT05 / HM-10 / JDY.
+- [x] 14.9 Docs: `PROTOCOL.md`, `AGENTS.md`, `NOTES.md` (what is not tested on a device).
+- [x] 14.10 `./gradlew testDebugUnitTest assembleDebug lintDebug` passes.
+- [ ] 14.11 Manual pass on a phone with the BT05: search, connect, About shows the firmware, a sequence runs,
+      `[FTS]` arrives, disconnect and reconnect, a long idle time (the terminal lost the link after about 3 minutes).
 
 ## Out of scope
 - Drop data validation (the original app has none).
