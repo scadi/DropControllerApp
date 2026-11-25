@@ -120,6 +120,23 @@ background for a future change.
 - [x] `SoundPlayer` is not covered by JVM tests (Android audio classes); the events behind it are
       (`LoopControllerTest`).
 
+## Stage 14 remarks (BLE transport)
+- [ ] Not tested on a phone yet (`PLAN.md` 14.11): search, connect, a sequence, disconnect, reconnect. Only the pure
+      parts (`ByteQueueInputStream`, `BleChunker`, `BluetoothTransport`) have JVM tests; `BleLink` and `BleScanner`
+      use the Android GATT API and have none.
+- [ ] Serial Bluetooth Terminal lost the link to the BT05 after about 3 minutes without traffic. Check whether the app
+      sees the same (the log shows `GATT disconnected, status N` and `connection lost`). If it does, a periodic
+      `[AYT]` could keep the link alive; not added because the cause is unknown.
+- [ ] GATT error 133 is retried once. Xiaomi / Android 14 may need more; the log has the status of every failure.
+- [ ] No MTU request: the longest app message is 13 characters, so 20-byte packets are enough.
+- [ ] A BLE module that is already connected to another phone does not advertise, so the search does not find it.
+- [ ] The search lists modules with the service `0xFFE0` or a name with `bt05`, `hm-10`, `jdy`, `ble` or
+      `dropcontroller`; a module with another name and no service in its advertisement is not listed.
+- [ ] The search needs `BLUETOOTH_SCAN` (Android 12+) or the location permission (Android 11 and below, asked at
+      start). Without it the button shows a message.
+- [ ] A BLE module paired in the system settings shows in the paired list; the app then uses BLE only if Android
+      reports its type as LE only. A dual-mode module paired as DUAL is tried with RFCOMM (decision: no fallback).
+
 ## Technical debt
 - [ ] `BluetoothHelper` uses `BluetoothDevice.getName()` through a permission check at every call; consider caching.
 - [x] Hard-coded strings in `activity_main.xml`, `bottom_nav_menu.xml`, `fragment_graph.xml`

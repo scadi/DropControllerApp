@@ -158,11 +158,18 @@
     <string name="bt_not_connected">Not connected to a device.</string>
     <string name="bt_simulated_device">Simulated dropController (debug)</string>
     <string name="bt_simulated_device_address">No Bluetooth needed</string>
-    <string name="bt_hint_likely">Looks like a dropController (HC-05 / HC-06)</string>
+    <string name="bt_hint_likely">Looks like a dropController (HC-05 / HC-06 / BT05)</string>
     <string name="bt_last_used_description">Used last time</string>
     <string name="bt_no_devices_title">No paired devices</string>
-    <string name="bt_no_devices_message">The dropController has to be paired first. Open the Bluetooth settings, pair the device named HC-05 or HC-06 (PIN 1234), then come back and select it here.</string>
+    <string name="bt_no_devices_message">A dropController with an HC-05 or HC-06 module has to be paired first. Open the Bluetooth settings, pair the device (PIN 1234), then come back and select it here. A BLE module (BT05) is not paired: use Search BLE modules.</string>
     <string name="bt_open_settings">Bluetooth settings</string>
+    <string name="bt_search_ble">Search BLE modules</string>
+    <string name="bt_search_ble_title">BLE modules</string>
+    <string name="bt_searching_ble">Searching for BLE modules (BT05, HM-10)…</string>
+    <string name="bt_ble_none_found">No BLE module found. Check that the module is powered and not connected to another phone, then search again.</string>
+    <string name="bt_ble_search_failed">The BLE search could not start: %1$s</string>
+    <string name="bt_ble_permission_needed">Turn Bluetooth on and allow the Bluetooth permission (on Android 11 and below the location permission) to search for BLE modules.</string>
+    <string name="bt_ble_signal">%1$s, signal %2$d dBm</string>
     <string name="log_clear">Clear</string>
     <string name="log_close">Close</string>
 

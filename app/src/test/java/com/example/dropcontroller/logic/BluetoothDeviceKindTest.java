@@ -28,6 +28,16 @@ public class BluetoothDeviceKindTest {
     }
 
     @Test
+    public void bleModuleNames_areLikelyDropController() {
+        assertEquals(BluetoothDeviceKind.LIKELY_DROP_CONTROLLER,
+                BluetoothDeviceKind.classify("BT05", BluetoothDeviceKind.UNKNOWN_CLASS));
+        assertEquals(BluetoothDeviceKind.LIKELY_DROP_CONTROLLER,
+                BluetoothDeviceKind.classify("HM-10", BluetoothDeviceKind.UNKNOWN_CLASS));
+        assertEquals(BluetoothDeviceKind.LIKELY_DROP_CONTROLLER,
+                BluetoothDeviceKind.classify("JDY-31-SPP", BluetoothDeviceKind.UNKNOWN_CLASS));
+    }
+
+    @Test
     public void similarNames_areNotLikelyDropController() {
         assertEquals(BluetoothDeviceKind.AUDIO, BluetoothDeviceKind.classify("HC-0600 headset", AUDIO));
         assertEquals(BluetoothDeviceKind.PHONE, BluetoothDeviceKind.classify("Galaxy", PHONE));

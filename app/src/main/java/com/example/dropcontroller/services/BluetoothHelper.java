@@ -12,6 +12,8 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.ParcelUuid;
+import android.os.SystemClock;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -21,6 +23,8 @@ import androidx.core.content.ContextCompat;
 
 import com.example.dropcontroller.R;
 import com.example.dropcontroller.logic.BluetoothDeviceKind;
+import com.example.dropcontroller.logic.BluetoothTransport;
+
 import com.example.dropcontroller.logic.DeviceMessage;
 import com.example.dropcontroller.logic.DeviceSimulator;
 import com.example.dropcontroller.logic.MessageFramer;
@@ -42,7 +46,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 
 /**
- * Bluetooth Classic (SPP/RFCOMM) connection to the dropController (Analogous to BluetoothClient1).
+ * Bluetooth connection to the dropController (Analogous to BluetoothClient1): Bluetooth Classic (SPP/RFCOMM, HC-05 /
+ * HC-06) or Bluetooth Low Energy (UART modules such as the BT05, see {@link BleLink}).
  * <p>
  * One instance is shared by the whole app (see DropControllerApp), so the connection survives tab changes.
  * Connecting and reading run on their own threads, writing runs on a single-thread executor, and all
@@ -230,6 +235,29 @@ public class BluetoothHelper {
         return true;
     }
 
+    /**
+     * @return true if a BLE scan may start: Bluetooth is on and the scan permission is granted (the location
+     * permission on Android 11 and below, the Bluetooth scan and connect permissions above)
+     */
+    public boolean canScanForBleModules() {
+        if (bluetoothAdapter == null || !hasConnectPermission() || !isAdapterEnabled()) {
+            return false;
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            return ContextCompat.checkSelfPermission(appContext, Manifest.permission.BLUETOOTH_SCAN)
+                    == PackageManager.PERMISSION_GRANTED;
+        }
+        return ContextCompat.checkSelfPermission(appContext, Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED;
+    }
+
+    /** @return a scanner for BLE UART modules; use it only after {@link #canScanForBleModules()} */
+    @NonNull
+    public BleScanner createBleScanner() {
+        return new BleScanner(bluetoothAdapter);
+    }
+
+
     // ----------------------------------------------------
     // 2. Connection Logic (Analogous to BluetoothClient1.Connect)
     // ----------------------------------------------------
@@ -242,8 +270,42 @@ public class BluetoothHelper {
         cancelThreads();
         recordEvent("connecting to a Bluetooth device");
         setState(State.CONNECTING);
-        connectThread = new ConnectThread(device);
+        connectThread = new ConnectThread(device, BluetoothTransport.RFCOMM);
         connectThread.start();
+    }
+
+    /**
+     * Connects to a BLE UART module (BT05, HM-10) over GATT. The module need not be paired. The rest of the app
+     * does not see a difference: the link is a pair of streams like the RFCOMM socket.
+     */
+    public synchronized void connectBle(@NonNull BluetoothDevice device) {
+        if (bluetoothAdapter == null || !hasConnectPermission()) {
+            notifyError(R.string.bt_permission_missing);
+            return;
+        }
+        cancelThreads();
+        recordEvent("connecting to a Bluetooth LE device");
+        setState(State.CONNECTING);
+        connectThread = new ConnectThread(device, BluetoothTransport.BLE);
+        connectThread.start();
+    }
+
+    /**
+     * @return the transport that suits a paired device: BLE if Android knows it as LE only, RFCOMM otherwise
+     * ({@link BluetoothTransport#forPairedDevice(int)}); RFCOMM if the type cannot be read
+     */
+    @NonNull
+    @SuppressLint("MissingPermission") // Checked by hasConnectPermission() below
+    public BluetoothTransport getPairedTransport(@NonNull BluetoothDevice device) {
+        if (!hasConnectPermission()) {
+            return BluetoothTransport.RFCOMM;
+        }
+        try {
+            return BluetoothTransport.forPairedDevice(device.getType());
+        } catch (SecurityException e) {
+            Log.w(TAG, "Missing Bluetooth permission", e);
+            return BluetoothTransport.RFCOMM;
+        }
     }
 
     /**
@@ -362,22 +424,33 @@ public class BluetoothHelper {
     // Thread for initiating an outgoing connection
     private class ConnectThread extends Thread {
         private final BluetoothDevice mmDevice;
+        private final BluetoothTransport mmTransport;
         private volatile BluetoothSocket mmSocket;
         private volatile boolean cancelled = false;
 
-        ConnectThread(@NonNull BluetoothDevice device) {
+        ConnectThread(@NonNull BluetoothDevice device, @NonNull BluetoothTransport transport) {
             mmDevice = device;
+            mmTransport = transport;
         }
 
         @SuppressLint("MissingPermission") // Checked in connect()
         @Override
         public void run() {
+            recordEvent(describePhone());
+            recordEvent(describeDevice(mmDevice));
+            recordEvent("transport: " + (mmTransport == BluetoothTransport.BLE ? "BLE" : "RFCOMM"));
+            if (mmTransport == BluetoothTransport.BLE) {
+                runBle();
+                return;
+            }
+
+
             BluetoothSocket socket;
             try {
                 socket = mmDevice.createRfcommSocketToServiceRecord(SPP_UUID);
             } catch (IOException | SecurityException e) {
                 Log.w(TAG, "Socket creation failed", e);
-                connectionFailed(this);
+                connectionFailed(this, "could not create the socket: " + describeError(e));
                 return;
             }
             mmSocket = socket;
@@ -386,6 +459,7 @@ public class BluetoothHelper {
                 return;
             }
 
+            long startedAt = SystemClock.elapsedRealtime();
             try {
                 // Always cancel discovery because it will slow down a connection
                 bluetoothAdapter.cancelDiscovery();
@@ -395,17 +469,43 @@ public class BluetoothHelper {
                 closeQuietly(socket);
                 if (!cancelled) {
                     Log.w(TAG, "Connect failed", e);
-                    connectionFailed(this);
+                    long elapsed = SystemClock.elapsedRealtime() - startedAt;
+                    connectionFailed(this, describeError(e) + " after " + elapsed + " ms, "
+                            + describeBondState(mmDevice));
                 }
                 return;
             }
 
+            recordEvent("socket opened in " + (SystemClock.elapsedRealtime() - startedAt) + " ms");
             connected(this, new RfcommLink(socket));
+        }
+
+        // BLE: opens the GATT link (blocks until it is ready) and hands it to the same connected thread as RFCOMM
+        private void runBle() {
+            long startedAt = SystemClock.elapsedRealtime();
+            BleLink link;
+            try {
+                link = BleLink.open(appContext, mmDevice, BluetoothHelper.this::recordEvent);
+            } catch (IOException e) {
+                if (!cancelled) {
+                    Log.w(TAG, "BLE connect failed", e);
+                    connectionFailed(this, describeError(e) + " after "
+                            + (SystemClock.elapsedRealtime() - startedAt) + " ms");
+                }
+                return;
+            }
+            if (cancelled) {
+                link.close();
+                return;
+            }
+            recordEvent("BLE link ready in " + (SystemClock.elapsedRealtime() - startedAt) + " ms");
+            connected(this, link);
         }
 
         // Closes the client socket and causes the thread to finish
         void cancel() {
             cancelled = true;
+            interrupt(); // Ends a BLE connection attempt that waits for a GATT callback
             BluetoothSocket socket = mmSocket;
             if (socket != null) {
                 closeQuietly(socket);
@@ -430,6 +530,7 @@ public class BluetoothHelper {
         @Override
         public void run() {
             byte[] buffer = new byte[256];
+            String reason = "the device closed the connection";
 
             // Keep listening to the InputStream while connected
             while (!cancelled) {
@@ -443,12 +544,14 @@ public class BluetoothHelper {
                         deliverMessage(DeviceMessage.parse(payload));
                     }
                 } catch (IOException e) {
+                    reason = describeError(e);
                     break;
                 }
             }
 
+            // Stream ended or failed: report only if we did not cancel it ourselves
             if (!cancelled) {
-                connectionLost(this);
+                connectionLost(this, reason);
             }
         }
 
@@ -553,26 +656,99 @@ public class BluetoothHelper {
         setState(State.CONNECTED);
     }
 
-    private synchronized void connectionFailed(@NonNull ConnectThread caller) {
+    private synchronized void connectionFailed(@NonNull ConnectThread caller, @NonNull String reason) {
         if (connectThread != caller) {
             return;
         }
         connectThread = null;
-        recordEvent("connection failed");
+        recordEvent("connection failed: " + reason);
         setState(State.DISCONNECTED);
         notifyError(R.string.bt_connection_failed);
     }
 
-    private synchronized void connectionLost(@NonNull ConnectedThread caller) {
+    private synchronized void connectionLost(@NonNull ConnectedThread caller, @NonNull String reason) {
         if (connectedThread != caller) {
             return;
         }
         connectedThread = null;
         writeGeneration++;
         caller.cancel();
-        recordEvent("connection lost");
+        recordEvent("connection lost: " + reason);
         setState(State.DISCONNECTED);
         notifyError(R.string.bt_connection_lost);
+    }
+
+    // ----------------------------------------------------
+    // Diagnostics written to the communication log
+    // ----------------------------------------------------
+
+    @NonNull
+    private static String describePhone() {
+        return "phone: " + Build.MANUFACTURER + " " + Build.MODEL + ", Android " + Build.VERSION.RELEASE
+                + " (API " + Build.VERSION.SDK_INT + ")";
+    }
+
+    @NonNull
+    private static String describeError(@NonNull Exception e) {
+        String message = e.getMessage();
+        return e.getClass().getSimpleName() + (message == null ? "" : ": " + message);
+    }
+
+    @SuppressLint("MissingPermission") // Checked in connect()
+    @NonNull
+    private static String describeDevice(@NonNull BluetoothDevice device) {
+        StringBuilder sb = new StringBuilder("device: ");
+        try {
+            sb.append(device.getName()).append(' ').append(device.getAddress());
+            sb.append(", ").append(describeBondState(device));
+            sb.append(", type ").append(describeType(device.getType()));
+            BluetoothClass deviceClass = device.getBluetoothClass();
+            sb.append(", class ").append(deviceClass == null ? "unknown"
+                    : Integer.toHexString(deviceClass.getDeviceClass()));
+            ParcelUuid[] uuids = device.getUuids();
+            if (uuids == null || uuids.length == 0) {
+                sb.append(", services: none known");
+            } else {
+                sb.append(", services:");
+                for (ParcelUuid uuid : uuids) {
+                    sb.append(' ').append(uuid.getUuid().toString().substring(0, 8));
+                }
+            }
+        } catch (SecurityException e) {
+            sb.append("not readable: ").append(describeError(e));
+        }
+        return sb.toString();
+    }
+
+    @SuppressLint("MissingPermission") // Checked in connect()
+    @NonNull
+    private static String describeBondState(@NonNull BluetoothDevice device) {
+        try {
+            switch (device.getBondState()) {
+                case BluetoothDevice.BOND_BONDED:
+                    return "paired";
+                case BluetoothDevice.BOND_BONDING:
+                    return "pairing";
+                default:
+                    return "not paired";
+            }
+        } catch (SecurityException e) {
+            return "pairing state unknown";
+        }
+    }
+
+    @NonNull
+    private static String describeType(int type) {
+        switch (type) {
+            case BluetoothDevice.DEVICE_TYPE_CLASSIC:
+                return "classic";
+            case BluetoothDevice.DEVICE_TYPE_LE:
+                return "LE only";
+            case BluetoothDevice.DEVICE_TYPE_DUAL:
+                return "dual";
+            default:
+                return "unknown";
+        }
     }
 
     private synchronized void setState(@NonNull State newState) {

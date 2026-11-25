@@ -17,6 +17,7 @@ import androidx.annotation.Nullable;
 
 import com.example.dropcontroller.R;
 import com.example.dropcontroller.logic.BluetoothDeviceKind;
+import com.example.dropcontroller.logic.BluetoothTransport;
 import com.google.android.material.color.MaterialColors;
 
 import java.util.List;
@@ -44,21 +45,27 @@ public class DeviceListAdapter extends ArrayAdapter<DeviceListAdapter.Entry> {
         private final String subtitle;
         @NonNull
         private final BluetoothDeviceKind kind;
+        @NonNull
+        private final BluetoothTransport transport;
         private final boolean lastUsed;
 
         /**
-         * @param device   the paired device, {@code null} for the simulator
-         * @param key      identifies the entry in the saved "used last time" value (the address of the device)
-         * @param subtitle the second line, normally the address
-         * @param lastUsed true for the device that was picked last time
+         * @param device    the Bluetooth device, {@code null} for the simulator
+         * @param key       identifies the entry in the saved "used last time" value (see {@link BluetoothTransport#key})
+         * @param subtitle  the second line, normally the address
+         * @param transport how the app connects to the device: RFCOMM for the simulator and for a paired device
+         *                  (unless Android knows it as LE only), BLE for a module found by the BLE search
+         * @param lastUsed  true for the device that was picked last time
          */
         public Entry(@Nullable BluetoothDevice device, @NonNull String key, @NonNull String name,
-                     @NonNull String subtitle, @NonNull BluetoothDeviceKind kind, boolean lastUsed) {
+                     @NonNull String subtitle, @NonNull BluetoothDeviceKind kind,
+                     @NonNull BluetoothTransport transport, boolean lastUsed) {
             this.device = device;
             this.key = key;
             this.name = name;
             this.subtitle = subtitle;
             this.kind = kind;
+            this.transport = transport;
             this.lastUsed = lastUsed;
         }
 
@@ -86,6 +93,11 @@ public class DeviceListAdapter extends ArrayAdapter<DeviceListAdapter.Entry> {
         @NonNull
         public BluetoothDeviceKind getKind() {
             return kind;
+        }
+
+        @NonNull
+        public BluetoothTransport getTransport() {
+            return transport;
         }
 
         public boolean isLastUsed() {

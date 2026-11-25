@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
  * show an icon and a hint and list the devices that can be a dropController first.
  */
 public enum BluetoothDeviceKind {
-    /** The name looks like the HC-05 / HC-06 module of the dropController (or the device is called so). */
+    /** The name looks like the module of the dropController: HC-05 / HC-06, or a BLE one (BT05, HM-10, JDY). */
     LIKELY_DROP_CONTROLLER(0),
     /** A serial module or another device without a specific class. */
     SERIAL_MODULE(1),
@@ -30,8 +30,8 @@ public enum BluetoothDeviceKind {
     /** Passed when the device reports no class. */
     public static final int UNKNOWN_CLASS = -1;
 
-    private static final Pattern DROP_CONTROLLER_NAME =
-            Pattern.compile("^(hc-?0[56]\\b.*|.*drop\\s*controller.*)$");
+    private static final Pattern DROP_CONTROLLER_NAME = Pattern.compile(
+            "^(hc-?0[56]\\b.*|bt-?05\\b.*|hm-?10\\b.*|jdy-?\\d+.*|.*drop\\s*controller.*)$");
 
     private final int sortRank;
 

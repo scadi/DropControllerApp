@@ -6,6 +6,15 @@ Do not change message formats without asking. Verify every format against the sk
 ## Transport and framing
 - Bluetooth Classic SPP (HC-06), 9600 baud. The device reads both the Bluetooth stream (SoftwareSerial) and USB serial
   (Windows app); the Android app only uses Bluetooth.
+- A BLE UART module (BT05, HM-10 style) works too, with the same messages and the same 9600 baud between the module
+  and the Arduino, so the firmware is not changed. The app talks GATT: service `0xFFE0`, characteristic `0xFFE1`
+  (NOTIFY, WRITE, WRITE WITHOUT RESPONSE). Writes are cut into packets of at most 20 bytes (default MTU, no MTU
+  request); a reply longer than 20 bytes arrives in several notifications and `MessageFramer` joins them. If a
+  module uses other UUIDs, the app takes the first non-standard characteristic that can notify and be written.
+  The transport is chosen per device (`logic/BluetoothTransport`): BLE for a device found by the BLE search or paired
+  and known to Android as LE only, RFCOMM for everything else.
+- The firmware echoes the received characters to its USB serial when `USB_DEBUG` is on. A BLE module in a terminal may
+  show that text; the app ignores everything outside `[` `]`.
 - Every message is enclosed in square brackets: `[` payload `]`. Bytes outside brackets are ignored.
 - Payload is ASCII. The device buffer holds 30 characters; the longest message is 13 characters.
 - No line terminators are needed. The device sends replies in the same bracket format.
