@@ -21,7 +21,7 @@ Status legend: `[ ]` todo, `[x]` done.
 ## Decisions
 - Language stays Java 11.
 - Loop Page is a separate `Activity` opened from the Drops tab; closing it returns to Drops.
-- The wire protocol is taken from the Arduino sketch in `firmware/` and documented in `docs/PROTOCOL.md`.
+- The wire protocol is taken from the Arduino sketch in `firmware/dropControllerV3_dC3_AS25006/` and documented in `docs/PROTOCOL.md`.
 
 ## Stage 0. Wire protocol (blocks stages 3-5)
 - [x] Read the Arduino sketch (`firmware/`).

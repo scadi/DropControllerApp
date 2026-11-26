@@ -1,12 +1,9 @@
 *.iml
 .gradle
+/.opencode
+/.idea
+/app/build
 /local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
 .DS_Store
 /build
 /app/release/
@@ -14,6 +11,15 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+/firmware/build/
+/firmware/DC3-Perfboard_11_Perboard-complete-top_1600w-1.jpg
+/firmware/DC3-Perfboard_13_Perboard-complete-bottom_1600w.jpg
+/firmware/DC3-Perfboard_14_Perboard-diasgram_1290w.jpg
+/firmware/DC3-Perfboard_15_Perboard-complete-top-no-Arduino_1600w-1536x1050.jpg
+/firmware/DC3-Perfboard_30_Perboard-diasgram_1200w.jpg
+/firmware/DC3-Perfboard_31_Perfboard-diagram-no-step-down_1200w.jpg
+/firmware/dropControllerV3_KiCAD_CircuitDiagram_v4.0.pdf
 # Release signing secrets
 /keystore.properties
 *.jks
@@ -23,5 +29,4 @@ local.properties
 hs_err_pid*.log
 replay_pid*.log
 
-# Per-machine IDE state (selected device)
-/.idea/deploymentTargetSelector.xml
+

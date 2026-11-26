@@ -1,6 +1,6 @@
 # Wire Protocol (app <-> dropController V3 firmware)
 
-Source of truth: `firmware/*.ino` (version `dC3_AS25006`, requires Android app version 30401 or higher).
+Source of truth: `firmware/dropControllerV3_dC3_AS25006/*.ino` (version `dC3_AS25006`, requires Android app version 30401 or higher).
 Do not change message formats without asking. Verify every format against the sketch before coding.
 
 ## Transport and framing

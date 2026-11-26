@@ -98,3 +98,38 @@ dependencies {
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
 }
+
+// ----- Custom Gradle tasks (jobs) -----
+// Tasks such as assembleDebug, testDebugUnitTest, lintDebug are created
+// automatically by the Android Gradle Plugin. We add convenience wrappers
+// with groups and descriptions that depend on the AGP tasks via dependsOn.
+
+tasks.register("buildDebug") {
+    group = "build"
+    description = "Build debug APK (./gradlew buildDebug)"
+    dependsOn("assembleDebug")
+}
+
+tasks.register("buildRelease") {
+    group = "build"
+    description = "Build release APK (./gradlew buildRelease)"
+    dependsOn("assembleRelease")
+}
+
+tasks.register("runTests") {
+    group = "test"
+    description = "Run JVM unit tests (./gradlew runTests)"
+    dependsOn("testDebugUnitTest")
+}
+
+tasks.register("runLint") {
+    group = "lint"
+    description = "Run Android Lint (./gradlew runLint)"
+    dependsOn("lintDebug")
+}
+
+tasks.register("verify") {
+    group = "verification"
+    description = "Full verification: assembleDebug + lintDebug + testDebugUnitTest"
+    dependsOn("assembleDebug", "lintDebug", "testDebugUnitTest")
+}

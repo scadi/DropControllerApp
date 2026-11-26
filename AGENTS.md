@@ -35,7 +35,7 @@ This project is a rewrite of the original App Inventor 2 app (Play Store id `app
 - **Presets** (new feature, not in the original app): the Drops tab has SAVE and LOAD icon buttons next to START. A preset is a named copy of the drop data and the setup settings (number of drops, Loop Mode, delay method, wait time, pulse times); the Sounds switch is not part of it. Names are 1-40 characters and unique ignoring case. Presets are disabled while a sequence runs. The Graph tab lists the presets as cards (chart, Load, long-press name to rename, trash to delete) and has Export / Import buttons.
 - **Export / import**: all presets go into one JSON file (`format` marker `dropcontroller-presets`, `version` 1) chosen with the system file picker (no storage permission). Import skips a preset with the same name and content, and saves one with the same name but different content as `Name1`, `Name2`, ... Format code is in `config/PresetJson`, import rules in `PresetRepository.importAll`.
 - **Drain tab**: opens a valve manually for draining.
-- The wire protocol is defined by the Arduino sketch in `firmware/` and summarized in `docs/PROTOCOL.md`. The existing `D%d,F%s,S%d` message in `DropsFragment` is a tutorial example, not the real protocol. Do not change message formats without asking.
+- The wire protocol is defined by the Arduino sketch in `firmware/dropControllerV3_dC3_AS25006/` and summarized in `docs/PROTOCOL.md`. The existing `D%d,F%s,S%d` message in `DropsFragment` is a tutorial example, not the real protocol. Do not change message formats without asking.
 
 The staged work plan and current feature status live in `docs/PLAN.md`; keep its checkboxes up to date as stages are completed.
 
@@ -68,6 +68,16 @@ APK locations: `buildApks` puts the final files in `build/dist/` (the canonical 
 
 Unit tests for the model, storage and `logic/` classes live in `src/test` (JUnit4); `src/androidTest` only has the stock example. There is no mocking library or Robolectric; add dependencies via the version catalog if needed. `org.json:json` is a `testImplementation` dependency, because `org.json` is only a stub in JVM unit tests.
 
+### Firmware (Arduino Nano)
+The firmware is a multi-file Arduino sketch in `firmware/dropControllerV3_dC3_AS25006/`; the pin map and the toolchain setup are in `firmware/README.md`. Firmware work belongs to the `arduino` agent.
+
+| Task | Command |
+|---|---|
+| Compile firmware | `powershell -NoProfile -ExecutionPolicy Bypass -File firmware/build.ps1` |
+| Compile and upload | `powershell -NoProfile -ExecutionPolicy Bypass -File firmware/build.ps1 -Upload -Port COM5` |
+
+The build uses the `arduino-cli.exe` bundled with Arduino IDE 2.x in `C:\Program Files\Arduino IDE` (override with `-IdeHome` or `ARDUINO_IDE_HOME`). `firmware/setup-toolchain.ps1` runs on the first build and prepares a private arduino-cli data folder in `%LOCALAPPDATA%\DropControllerArduino\cli-data`; if `downloads.arduino.cc` is blocked it links the AVR core and tools from the Arduino IDE 1.8.x package. `discovery not found` warnings are expected and harmless. Build output goes to `firmware/build/` (git-ignored).
+
 ## Project Layout
 ```
 app/src/main/java/com/example/dropcontroller/
@@ -87,6 +97,11 @@ app/src/main/java/com/example/dropcontroller/
   services/SimulatorLink.java  in-process link to logic/DeviceSimulator (debug-only entry point)
   views/GraphCanvasView.java   custom View
 app/src/main/res/              layout/, menu/, drawable/, values/, values-night/, xml/
+firmware/dropControllerV3_dC3_AS25006/  Arduino Nano sketch (main .ino + four modules)
+firmware/build.ps1             compile/upload helper
+firmware/setup-toolchain.ps1   one-time AVR toolchain setup
+firmware/README.md             pin map and toolchain setup
+docs/PROTOCOL.md               wire protocol
 ```
 
 ## Known Pitfalls (check before editing)
